@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="..\Mile.Project.Windows\Mile.Project.Platform.x86.props" />
+  <Import Project="..\Mile.Project.Windows\Mile.Project.Platform.x64.props" />
+  <Import Project="..\Mile.Project.Windows\Mile.Project.Platform.ARM64.props" />
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{5B304166-4687-4416-98CB-28F7A3E79276}</ProjectGuid>
+    <RootNamespace>NanaRunWindows</RootNamespace>
+    <TargetName>NanaRunG</TargetName>
+    <MileProjectType>WindowsApplication</MileProjectType>
+    <MileProjectManifestFile>NanaRunWindows.manifest</MileProjectManifestFile>
+    <MileProjectEnableVCLTLSupport>true</MileProjectEnableVCLTLSupport>
+  </PropertyGroup>
+  <Import Project="..\Mile.Project.Windows\Mile.Project.Cpp.props" />
+  <ItemGroup>
+    <ClCompile Include="NanaRunWindows.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <Manifest Include="NanaRunWindows.manifest" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Mile.Project.Properties.h" />
+  </ItemGroup>
+  <Import Project="..\Mile.Project.Windows\Mile.Project.Cpp.targets" />
+</Project>
