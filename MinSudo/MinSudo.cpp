@@ -404,7 +404,7 @@ int main()
                 L"\r\n");
             return 0;
         }
-        else
+        else if (!(NoLogo || Verbose))
         {
             ShowInvalidCommandLine = true;
         }
