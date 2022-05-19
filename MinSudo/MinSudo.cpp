@@ -46,7 +46,7 @@ namespace
         bool InQuotes = false;
         do
         {
-            if (*p == '"')
+            if (*p == L'"')
             {
                 InQuotes = !InQuotes;
                 c = *p++;
@@ -57,9 +57,9 @@ namespace
             Buffer.push_back(*p);
 
             c = *p++;
-        } while (c != '\0' && (InQuotes || (c != ' ' && c != '\t')));
+        } while (c != L'\0' && (InQuotes || (c != L' ' && c != L'\t')));
 
-        if (c == '\0')
+        if (c == L'\0')
         {
             p--;
         }
@@ -78,12 +78,12 @@ namespace
         {
             if (*p)
             {
-                while (*p == ' ' || *p == '\t')
+                while (*p == L' ' || *p == L'\t')
                     ++p;
             }
 
             // End of arguments
-            if (*p == '\0')
+            if (*p == L'\0')
                 break;
 
             // Initialize the argument buffer.
@@ -99,20 +99,20 @@ namespace
                 // backslashes ==> N backslashes
                 numslash = 0;
 
-                while (*p == '\\')
+                while (*p == L'\\')
                 {
                     // Count number of backslashes for use below
                     ++p;
                     ++numslash;
                 }
 
-                if (*p == '"')
+                if (*p == L'"')
                 {
                     // if 2N backslashes before, start/end quote, otherwise copy
                     // literally:
                     if (numslash % 2 == 0)
                     {
-                        if (InQuotes && p[1] == '"')
+                        if (InQuotes && p[1] == L'"')
                         {
                             p++; // Double quote inside quoted string
                         }
@@ -134,7 +134,7 @@ namespace
                 }
 
                 // If at end of arg, break loop:
-                if (*p == '\0' || (!InQuotes && (*p == ' ' || *p == '\t')))
+                if (*p == L'\0' || (!InQuotes && (*p == L' ' || *p == L'\t')))
                     break;
 
                 // Copy character into argument:
