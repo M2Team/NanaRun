@@ -19,6 +19,8 @@
 
 #include "Mile.Project.Properties.h"
 
+#include "resource.h"
+
 namespace
 {
     std::vector<std::wstring> SpiltCommandLine(
@@ -295,82 +297,84 @@ namespace
         return Result;
     }
 
-    std::string ToConsoleString(
-        std::wstring const& Utf16String)
+    std::wstring ToWideString(
+        std::uint32_t CodePage,
+        std::string_view const& InputString)
     {
-        std::string ConsoleString;
+        std::wstring OutputString;
 
-        UINT CurrentCodePage = ::GetConsoleOutputCP();
-
-        int ConsoleStringLength = ::WideCharToMultiByte(
-            CurrentCodePage,
+        int OutputStringLength = ::MultiByteToWideChar(
+            CodePage,
             0,
-            Utf16String.data(),
-            static_cast<int>(Utf16String.size()),
+            InputString.data(),
+            static_cast<int>(InputString.size()),
+            nullptr,
+            0);
+        if (OutputStringLength > 0)
+        {
+            OutputString.resize(OutputStringLength);
+            OutputStringLength = ::MultiByteToWideChar(
+                CodePage,
+                0,
+                InputString.data(),
+                static_cast<int>(InputString.size()),
+                &OutputString[0],
+                OutputStringLength);
+            OutputString.resize(OutputStringLength);
+        }
+
+        return OutputString;
+    }
+
+    std::string ToMultiByteString(
+        std::uint32_t CodePage,
+        std::wstring_view const& InputString)
+    {
+        std::string OutputString;
+
+        int OutputStringLength = ::WideCharToMultiByte(
+            CodePage,
+            0,
+            InputString.data(),
+            static_cast<int>(InputString.size()),
             nullptr,
             0,
             nullptr,
             nullptr);
-        if (ConsoleStringLength > 0)
+        if (OutputStringLength > 0)
         {
-            ConsoleString.resize(ConsoleStringLength);
-            ConsoleStringLength = ::WideCharToMultiByte(
-                CurrentCodePage,
+            OutputString.resize(OutputStringLength);
+            OutputStringLength = ::WideCharToMultiByte(
+                CodePage,
                 0,
-                Utf16String.data(),
-                static_cast<int>(Utf16String.size()),
-                &ConsoleString[0],
-                ConsoleStringLength,
+                InputString.data(),
+                static_cast<int>(InputString.size()),
+                &OutputString[0],
+                OutputStringLength,
                 nullptr,
                 nullptr);
-            ConsoleString.resize(ConsoleStringLength);
+            OutputString.resize(OutputStringLength);
         }
 
-        return ConsoleString;
-    }
-
-    std::wstring ToUtf16String(
-        std::string const& Utf8String)
-    {
-        std::wstring Utf16String;
-
-        int Utf16StringLength = ::MultiByteToWideChar(
-            CP_UTF8,
-            0,
-            Utf8String.c_str(),
-            static_cast<int>(Utf8String.size()),
-            nullptr,
-            0);
-        if (Utf16StringLength > 0)
-        {
-            Utf16String.resize(Utf16StringLength);
-            Utf16StringLength = ::MultiByteToWideChar(
-                CP_UTF8,
-                0,
-                Utf8String.c_str(),
-                static_cast<int>(Utf8String.size()),
-                &Utf16String[0],
-                Utf16StringLength);
-            Utf16String.resize(Utf16StringLength);
-        }
-
-        return Utf16String;
+        return OutputString;
     }
 
     void WriteToConsole(
-        std::wstring const& String)
+        std::wstring_view const& String)
     {
         HANDLE ConsoleOutputHandle = ::GetStdHandle(STD_OUTPUT_HANDLE);
 
         DWORD NumberOfCharsWritten = 0;
         if (!::WriteConsoleW(
             ConsoleOutputHandle,
-            String.c_str(),
+            String.data(),
             static_cast<DWORD>(String.size()),
             &NumberOfCharsWritten,
             nullptr))
         {
-            std::string CurrentCodePageString = ::ToConsoleString(String);
+            std::string CurrentCodePageString = ::ToMultiByteString(
+                ::GetConsoleOutputCP(),
+                String);
 
             ::WriteFile(
                 ConsoleOutputHandle,
@@ -436,28 +440,28 @@ namespace
         return TRUE;
     }
 
-    std::map<std::string, std::string> ParseStringDictionary(
-        std::string const& Content)
+    std::map<std::string, std::wstring> ParseStringDictionary(
+        std::string_view const& Content)
     {
-        const std::string KeySeparator = "\r\n- ";
-        const std::string ValueStartSeparator = "\r\n```\r\n";
-        const std::string ValueEndSeparator = "\r\n```";
+        constexpr std::string_view KeySeparator = "\r\n- ";
+        constexpr std::string_view ValueStartSeparator = "\r\n```\r\n";
+        constexpr std::string_view ValueEndSeparator = "\r\n```";
 
-        std::map<std::string, std::string> Result;
+        std::map<std::string, std::wstring> Result;
 
         if (Content.empty())
         {
             return Result;
         }
 
-        const char* Start = Content.c_str();
+        const char* Start = Content.data();
         const char* End = Start + Content.size();
 
         while (Start < End)
         {
             const char* KeyStart = std::strstr(
                 Start,
-                KeySeparator.c_str());
+                KeySeparator.data());
             if (!KeyStart)
             {
                 break;
@@ -466,7 +470,7 @@ namespace
 
             const char* KeyEnd = std::strstr(
                 KeyStart,
-                ValueStartSeparator.c_str());
+                ValueStartSeparator.data());
             if (!KeyEnd)
             {
                 break;
@@ -477,7 +481,7 @@ namespace
 
             const char* ValueEnd = std::strstr(
                 ValueStart,
-                ValueEndSeparator.c_str());
+                ValueEndSeparator.data());
             if (!ValueEnd)
             {
                 break;
@@ -487,14 +491,14 @@ namespace
 
             Result.emplace(std::pair(
                 std::string(KeyStart, KeyEnd - KeyStart),
-                std::string(ValueStart, ValueEnd - ValueStart)));
+                ::ToWideString(
+                    CP_UTF8,
+                    std::string(ValueStart, ValueEnd - ValueStart))));
         }
 
         return Result;
     }
 }
-
-#include "resource.h"
 
 int main()
 {
@@ -510,7 +514,7 @@ int main()
         break;
     }
 
-    std::map<std::string, std::string> StringDictionary;
+    std::map<std::string, std::wstring> StringDictionary;
 
     RESOURCE_INFO ResourceInfo = { 0 };
     if (::SimpleLoadResource(
@@ -519,7 +523,7 @@ int main()
         L"Translations",
         MAKEINTRESOURCEW(IDR_TRANSLATIONS)))
     {
-        StringDictionary = ::ParseStringDictionary(std::string(
+        StringDictionary = ::ParseStringDictionary(std::string_view(
             reinterpret_cast<const char*>(ResourceInfo.Pointer),
             ResourceInfo.Size));
     }
@@ -589,20 +593,18 @@ int main()
 
     if (ShowHelp)
     {
-        ::WriteToConsole(::ToUtf16String(
-            StringDictionary["CommandLineHelp"]));
+        ::WriteToConsole(StringDictionary["CommandLineHelp"]);
 
         return 0;
     }
     else if (ShowInvalidCommandLine)
     {
-        ::WriteToConsole(::ToUtf16String(
-            StringDictionary["InvalidCommandLineError"]));
+        ::WriteToConsole(StringDictionary["InvalidCommandLineError"]);
 
         return E_INVALIDARG;
     }
 
-    ApplicationName = GetCurrentProcessModulePath();
+    ApplicationName = ::GetCurrentProcessModulePath();
     if (UnresolvedCommandLine.empty())
     {
         UnresolvedCommandLine = L"cmd.exe";
@@ -611,8 +613,7 @@ int main()
     if (Verbose)
     {
         std::wstring VerboseInformation;
-        VerboseInformation += ::ToUtf16String(
-            StringDictionary["CommandLineNotice"]);
+        VerboseInformation += StringDictionary["CommandLineNotice"];
         VerboseInformation += UnresolvedCommandLine;
         VerboseInformation += L"\r\n";
         ::WriteToConsole(VerboseInformation.c_str());
@@ -625,8 +626,7 @@ int main()
 
         if (Verbose)
         {
-            ::WriteToConsole(::ToUtf16String(
-                StringDictionary["Stage1Notice"]));
+            ::WriteToConsole(StringDictionary["Stage1Notice"]);
         }
 
         STARTUPINFOW StartupInfo = { 0 };
@@ -654,16 +654,14 @@ int main()
         }
         else
         {
-            ::WriteToConsole(::ToUtf16String(
-                StringDictionary["Stage1Failed"]));
+            ::WriteToConsole(StringDictionary["Stage1Failed"]);
         }
     }
     else
     {
         if (Verbose)
         {
-            ::WriteToConsole(::ToUtf16String(
-                StringDictionary["Stage0Notice"]));
+            ::WriteToConsole(StringDictionary["Stage0Notice"]);
         }
 
         std::wstring TargetCommandLine = L"--NoLogo ";
@@ -686,8 +684,7 @@ int main()
         }
         else
         {
-            ::WriteToConsole(::ToUtf16String(
-                StringDictionary["Stage0Failed"]));
+            ::WriteToConsole(StringDictionary["Stage0Failed"]);
         }
     }
 
