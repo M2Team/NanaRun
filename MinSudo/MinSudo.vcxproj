@@ -25,6 +25,14 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Mile.Project.Properties.h" />
+    <ClInclude Include="resource.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\en\Translations.md" />
+    <None Include="Resources\zh-Hans\Translations.md" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="MinSudo.rc" />
   </ItemGroup>
   <Import Project="..\Mile.Project.Windows\Mile.Project.Cpp.targets" />
 </Project>

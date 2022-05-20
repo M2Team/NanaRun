@@ -329,10 +329,38 @@ namespace
         return ConsoleString;
     }
 
+    std::wstring ToUtf16String(
+        std::string const& Utf8String)
+    {
+        std::wstring Utf16String;
+
+        int Utf16StringLength = ::MultiByteToWideChar(
+            CP_UTF8,
+            0,
+            Utf8String.c_str(),
+            static_cast<int>(Utf8String.size()),
+            nullptr,
+            0);
+        if (Utf16StringLength > 0)
+        {
+            Utf16String.resize(Utf16StringLength);
+            Utf16StringLength = ::MultiByteToWideChar(
+                CP_UTF8,
+                0,
+                Utf8String.c_str(),
+                static_cast<int>(Utf8String.size()),
+                &Utf16String[0],
+                Utf16StringLength);
+            Utf16String.resize(Utf16StringLength);
+        }
+
+        return Utf16String;
+    }
+
     void WriteToConsole(
         std::wstring const& String)
     {
-        HANDLE ConsoleOutputHandle = ::GetStdHandle(STD_OUTPUT_HANDLE);;
+        HANDLE ConsoleOutputHandle = ::GetStdHandle(STD_OUTPUT_HANDLE);
 
         DWORD NumberOfCharsWritten = 0;
         if (!::WriteConsoleW(
@@ -352,10 +380,150 @@ namespace
                 nullptr);
         }
     }
+
+    typedef struct _RESOURCE_INFO
+    {
+        DWORD Size;
+        LPVOID Pointer;
+    } RESOURCE_INFO, * PRESOURCE_INFO;
+
+    BOOL SimpleLoadResource(
+        _Out_ PRESOURCE_INFO ResourceInfo,
+        _In_opt_ HMODULE ModuleHandle,
+        _In_ LPCWSTR Type,
+        _In_ LPCWSTR Name)
+    {
+        if (!ResourceInfo)
+        {
+            ::SetLastError(ERROR_INVALID_PARAMETER);
+            return FALSE;
+        }
+
+        std::memset(
+            ResourceInfo,
+            0,
+            sizeof(RESOURCE_INFO));
+
+        HRSRC ResourceFind = ::FindResourceExW(
+            ModuleHandle,
+            Type,
+            Name,
+            MAKELANGID(LANG_NEUTRAL, SUBLANG_NEUTRAL));
+        if (!ResourceFind)
+        {
+            return FALSE;
+        }
+
+        ResourceInfo->Size = ::SizeofResource(
+            ModuleHandle,
+            ResourceFind);
+        if (ResourceInfo->Size == 0)
+        {
+            return FALSE;
+        }
+
+        HGLOBAL ResourceLoad = ::LoadResource(
+            ModuleHandle,
+            ResourceFind);
+        if (!ResourceLoad)
+        {
+            return FALSE;
+        }
+
+        ResourceInfo->Pointer = ::LockResource(
+            ResourceLoad);
+
+        return TRUE;
+    }
+
+    std::map<std::string, std::string> ParseStringDictionary(
+        std::string const& Content)
+    {
+        const std::string KeySeparator = "\r\n- ";
+        const std::string ValueStartSeparator = "\r\n```\r\n";
+        const std::string ValueEndSeparator = "\r\n```";
+
+        std::map<std::string, std::string> Result;
+
+        if (Content.empty())
+        {
+            return Result;
+        }
+
+        const char* Start = Content.c_str();
+        const char* End = Start + Content.size();
+
+        while (Start < End)
+        {
+            const char* KeyStart = std::strstr(
+                Start,
+                KeySeparator.c_str());
+            if (!KeyStart)
+            {
+                break;
+            }
+            KeyStart += KeySeparator.size();
+
+            const char* KeyEnd = std::strstr(
+                KeyStart,
+                ValueStartSeparator.c_str());
+            if (!KeyEnd)
+            {
+                break;
+            }
+
+            const char* ValueStart =
+                KeyEnd + ValueStartSeparator.size();
+
+            const char* ValueEnd = std::strstr(
+                ValueStart,
+                ValueEndSeparator.c_str());
+            if (!ValueEnd)
+            {
+                break;
+            }
+
+            Start = ValueEnd + ValueEndSeparator.size();
+
+            Result.emplace(std::pair(
+                std::string(KeyStart, KeyEnd - KeyStart),
+                std::string(ValueStart, ValueEnd - ValueStart)));
+        }
+
+        return Result;
+    }
 }
+
+#include "resource.h"
 
 int main()
 {
+    // Fall back to English in unsupported environment. (Temporary Hack)
+    // Reference: https://github.com/M2Team/NSudo/issues/56
+    switch (PRIMARYLANGID(::GetThreadUILanguage()))
+    {
+    case LANG_ENGLISH:
+    case LANG_CHINESE:
+        break;
+    default:
+        ::SetThreadUILanguage(MAKELANGID(LANG_ENGLISH, SUBLANG_NEUTRAL));
+        break;
+    }
+
+    std::map<std::string, std::string> StringDictionary;
+
+    RESOURCE_INFO ResourceInfo = { 0 };
+    if (::SimpleLoadResource(
+        &ResourceInfo,
+        ::GetModuleHandleW(nullptr),
+        L"Translations",
+        MAKEINTRESOURCEW(IDR_TRANSLATIONS)))
+    {
+        StringDictionary = ::ParseStringDictionary(std::string(
+            reinterpret_cast<const char*>(ResourceInfo.Pointer),
+            ResourceInfo.Size));
+    }
+
     std::wstring ApplicationName;
     std::map<std::wstring, std::wstring> OptionsAndParameters;
     std::wstring UnresolvedCommandLine;
@@ -421,36 +589,15 @@ int main()
 
     if (ShowHelp)
     {
-        ::WriteToConsole(
-            L"Format: MinSudo [ Options ] Command" L"\r\n"
-            L"\r\n"
-            L"Options:" L"\r\n"
-            L"\r\n"
-            L"--NoLogo Suppress copyright message."  L"\r\n"
-            L"--Verbose Show detailed information."  L"\r\n"
-            L"\r\n"
-            L"--Version Show version information."  L"\r\n"
-            L"\r\n"
-            L"/? Show this content."  L"\r\n"
-            L"-H Show this content."  L"\r\n"
-            L"--Help Show this content."  L"\r\n"
-            L"\r\n"
-            L"Notes:" L"\r\n"
-            L"    All command options are case-insensitive." L"\r\n"
-            L"    You can use the \"/\" or \"--\" override \"-\" and use "
-            L"the \"=\" override \":\" in \r\n    the command line "
-            L"parameters. For example, \"/Option:Value\" and \r\n    "
-            L"\"-Option=Value\" are equivalent." L"\r\n"
-            L"\r\n");
+        ::WriteToConsole(::ToUtf16String(
+            StringDictionary["CommandLineHelp"]));
 
         return 0;
     }
     else if (ShowInvalidCommandLine)
     {
-        ::WriteToConsole(
-            L"[Error] Invalid command line parameters."
-            L" (Use '/?', '-H' or '--Help' option for usage.)"
-            L"\r\n");
+        ::WriteToConsole(::ToUtf16String(
+            StringDictionary["InvalidCommandLineError"]));
 
         return E_INVALIDARG;
     }
@@ -464,7 +611,8 @@ int main()
     if (Verbose)
     {
         std::wstring VerboseInformation;
-        VerboseInformation += L"[Info] Target Command Line: ";
+        VerboseInformation += ::ToUtf16String(
+            StringDictionary["CommandLineNotice"]);
         VerboseInformation += UnresolvedCommandLine;
         VerboseInformation += L"\r\n";
         ::WriteToConsole(VerboseInformation.c_str());
@@ -477,9 +625,8 @@ int main()
 
         if (Verbose)
         {
-            ::WriteToConsole(
-                L"[Info] Enter the Stage 1 (elevated)." L"\r\n"
-                L"\r\n");
+            ::WriteToConsole(::ToUtf16String(
+                StringDictionary["Stage1Notice"]));
         }
 
         STARTUPINFOW StartupInfo = { 0 };
@@ -507,18 +654,16 @@ int main()
         }
         else
         {
-            ::WriteToConsole(
-                L"[Error] CreateProcessW failed."
-                L"\r\n");
+            ::WriteToConsole(::ToUtf16String(
+                StringDictionary["Stage1Failed"]));
         }
     }
     else
     {
         if (Verbose)
         {
-            ::WriteToConsole(
-                L"[Info] Enter the Stage 0 (non-elevated)."
-                L"\r\n");
+            ::WriteToConsole(::ToUtf16String(
+                StringDictionary["Stage0Notice"]));
         }
 
         std::wstring TargetCommandLine = L"--NoLogo ";
@@ -541,9 +686,8 @@ int main()
         }
         else
         {
-            ::WriteToConsole(
-                L"[Error] ShellExecuteExW failed."
-                L"\r\n");
+            ::WriteToConsole(::ToUtf16String(
+                StringDictionary["Stage0Failed"]));
         }
     }
 

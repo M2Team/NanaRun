@@ -8,5 +8,28 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Mile.Project.Properties.h" />
+    <ClInclude Include="resource.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Resources">
+      <UniqueIdentifier>{7b09b2fc-15c9-40d3-8c68-b33226a0b2cd}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resources\en">
+      <UniqueIdentifier>{0e9f5c86-045b-493f-b15e-750b369fc678}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resources\zh-Hans">
+      <UniqueIdentifier>{71ae93ee-4aa8-44b8-bc84-e680a9768fc5}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\en\Translations.md">
+      <Filter>Resources\en</Filter>
+    </None>
+    <None Include="Resources\zh-Hans\Translations.md">
+      <Filter>Resources\zh-Hans</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="MinSudo.rc" />
   </ItemGroup>
 </Project>
