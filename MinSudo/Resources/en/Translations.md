@@ -1,12 +1,12 @@
-﻿##
-## PROJECT:   NanaRun
-## FILE:      Translations.md
-## PURPOSE:   The English translation for MinSudo
-## 
-## LICENSE:   The MIT License
-## 
-## DEVELOPER: Mouri_Naruto (Mouri_Naruto AT Outlook.com)
-##
+﻿```
+* PROJECT:   NanaRun
+* FILE:      Translations.md
+* PURPOSE:   The English translation for MinSudo
+*
+* LICENSE:   The MIT License
+*
+* DEVELOPER: Mouri_Naruto (Mouri_Naruto AT Outlook.com)
+```
 
 - InvalidCommandLineError
 ```
@@ -45,19 +45,27 @@ Format: MinSudo [ Options ] Command
 
 Options:
 
---NoLogo Suppress copyright message.
---Verbose Show detailed information.
+  --NoLogo Suppress copyright message.
+  --Verbose Show detailed information.
 
---Version Show version information.
+  --Version Show version information.
 
-/? Show this content.
--H Show this content.
---Help Show this content.
+  /? Show this content.
+  -H Show this content.
+  --Help Show this content.
 
 Notes:
-    All command options are case-insensitive.
-    You can use the "/" or "--" override "-" and use the "=" override ":" in
-    the command line parameters. For example, "/Option:Value" and
+
+  - All command options are case-insensitive.
+  - MinSudo will execute "cmd.exe" if you don't specify another command.
+  - You can use the "/" or "--" override "-" and use the "=" override ":" in 
+    the command line parameters. For example, "/Option:Value" and 
     "-Option=Value" are equivalent.
+
+Example:
+
+  If you want to run "whoami /all" as elevated in the non-elevated Console, and
+  you don't want to show version information of MinSudo.
+  > MinSudo --NoLogo whoami /all
 
 ```
