@@ -632,10 +632,6 @@ int main()
         STARTUPINFOW StartupInfo = { 0 };
         PROCESS_INFORMATION ProcessInformation = { 0 };
         StartupInfo.cb = sizeof(STARTUPINFOW);
-        StartupInfo.dwFlags |= STARTF_USESTDHANDLES;
-        StartupInfo.hStdInput = ::GetStdHandle(STD_INPUT_HANDLE);
-        StartupInfo.hStdOutput = ::GetStdHandle(STD_OUTPUT_HANDLE);
-        StartupInfo.hStdError = ::GetStdHandle(STD_ERROR_HANDLE);
         if (::CreateProcessW(
             nullptr,
             const_cast<LPWSTR>(UnresolvedCommandLine.c_str()),
