@@ -8,8 +8,8 @@ The source code of NanaRun (not including the source code from third-party
 libraries) is distributed under the MIT License.
 
 The application file association icons of NanaRun (these contents are only in 
-the `Assets` folder) are designed by Kenji Mouri and authorized to the NanaRun 
-project, and it is distributed under the CC BY-ND 4.0 License.
+the `Assets` folder) are designed by Shomnipotence and authorized to the 
+NanaRun project, and it is distributed under the CC BY-ND 4.0 License.
 
 The source code from the third-party libraries is distributed under the original
 license used in the third-party libraries.
@@ -62,7 +62,7 @@ SOFTWARE.
 ### The CC BY-ND 4.0 License
 
 ```
-Copyright (c) Kenji Mouri and M2-Team. All rights reserved.
+Copyright (c) Shomnipotence and M2-Team. All rights reserved.
 
 This work is licensed under a Creative Commons Attribution-NoDerivatives 4.0
 International License.
@@ -464,4 +464,3 @@ Creative Commons may be contacted at creativecommons.org.
 - C++/WinRT, https://github.com/microsoft/cppwinrt
 - Mile.Cpp, https://github.com/ProjectMile/Mile.Cpp
 - VC-LTL, https://github.com/Chuyu-Team/VC-LTL5
-- Windows UI Library, https://github.com/microsoft/microsoft-ui-xaml
