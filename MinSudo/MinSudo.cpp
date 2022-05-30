@@ -644,6 +644,11 @@ int main()
             &StartupInfo,
             &ProcessInformation))
         {
+            // Make sure ignores CTRL+C signals after creating the child
+            // process. Because that state is heritable, but we want to make
+            // child process support CTRL+C.
+            ::SetConsoleCtrlHandler(nullptr, TRUE);
+
             ::CloseHandle(ProcessInformation.hThread);
             ::WaitForSingleObjectEx(ProcessInformation.hProcess, INFINITE, FALSE);
             ::CloseHandle(ProcessInformation.hProcess);
@@ -675,6 +680,11 @@ int main()
         Information.lpParameters = TargetCommandLine.c_str();
         if (::ShellExecuteExW(&Information))
         {
+            // Make sure ignores CTRL+C signals after creating the child
+            // process. Because that state is heritable, but we want to make
+            // child process support CTRL+C.
+            ::SetConsoleCtrlHandler(nullptr, TRUE);
+
             ::WaitForSingleObjectEx(Information.hProcess, INFINITE, FALSE);
             ::CloseHandle(Information.hProcess);
         }
