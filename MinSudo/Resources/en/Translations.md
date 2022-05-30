@@ -47,6 +47,7 @@ Options:
 
   --NoLogo Suppress copyright message.
   --Verbose Show detailed information.
+  --WorkDir=[ Path ] Set working directory.
 
   --Version Show version information.
 

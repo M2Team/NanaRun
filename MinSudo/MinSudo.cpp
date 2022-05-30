@@ -269,6 +269,15 @@ namespace
         return Path;
     }
 
+    std::wstring GetWorkingDirectory()
+    {
+        // 32767 is the maximum path length without the terminating null character.
+        std::wstring Path(32767, L'\0');
+        Path.resize(::GetCurrentDirectoryW(
+            static_cast<DWORD>(Path.size()), &Path[0]));
+        return Path;
+    }
+
     bool IsCurrentProcessElevated()
     {
         bool Result = false;
@@ -542,6 +551,7 @@ int main()
 
     bool NoLogo = false;
     bool Verbose = false;
+    std::wstring WorkDir;
 
     for (auto& OptionAndParameter : OptionsAndParameters)
     {
@@ -552,6 +562,10 @@ int main()
         else if (0 == _wcsicmp(OptionAndParameter.first.c_str(), L"Verbose"))
         {
             Verbose = true;
+        }
+        else if (0 == _wcsicmp(OptionAndParameter.first.c_str(), L"WorkDir"))
+        {
+            WorkDir = OptionAndParameter.second;
         }
     }
 
@@ -576,7 +590,7 @@ int main()
                 L"\r\n");
             return 0;
         }
-        else if (!(NoLogo || Verbose))
+        else if (!(NoLogo || Verbose || !WorkDir.empty()))
         {
             ShowInvalidCommandLine = true;
         }
@@ -640,7 +654,7 @@ int main()
             TRUE,
             0,
             nullptr,
-            nullptr,
+            WorkDir.empty() ? nullptr : WorkDir.c_str(),
             &StartupInfo,
             &ProcessInformation))
         {
@@ -670,6 +684,11 @@ int main()
         {
             TargetCommandLine += L"--Verbose ";
         }
+        TargetCommandLine += L"--WorkDir=\"";
+        TargetCommandLine += WorkDir.empty()
+            ? ::GetWorkingDirectory()
+            : WorkDir;
+        TargetCommandLine += L"\" ";
         TargetCommandLine += UnresolvedCommandLine;
 
         SHELLEXECUTEINFOW Information = { 0 };
