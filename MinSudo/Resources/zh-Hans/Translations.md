@@ -47,6 +47,9 @@
   --NoLogo 隐藏版权信息。
   --Verbose 显示详细信息。
   --WorkDir=[ 路径 ] 设置工作目录。
+  --System 使用 System 而不是管理员执行。
+  --TrustedInstaller 使用 TrustedInstaller 而不是管理员执行。
+  --Privileged 启用全部特权。
 
   --Version 显示版本信息。
 

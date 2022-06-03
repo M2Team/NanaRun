@@ -48,6 +48,9 @@ Options:
   --NoLogo Suppress copyright message.
   --Verbose Show detailed information.
   --WorkDir=[ Path ] Set working directory.
+  --System Run as System instead of Administrator.
+  --TrustedInstaller Run as TrustedInstaller instead of Administrator.
+  --Privileged Enable all privileges.
 
   --Version Show version information.
 

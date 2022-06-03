@@ -10,6 +10,12 @@
 
 #include <Windows.h>
 
+#include <WtsApi32.h>
+#pragma comment(lib, "WtsApi32.lib")
+
+#include <Userenv.h>
+#pragma comment(lib, "Userenv.lib")
+
 #include <cstdint>
 #include <cwchar>
 
@@ -507,6 +513,765 @@ namespace
 
         return Result;
     }
+
+    class DisableCopyConstruction
+    {
+    protected:
+        DisableCopyConstruction() = default;
+        ~DisableCopyConstruction() = default;
+
+    private:
+        DisableCopyConstruction(
+            const DisableCopyConstruction&) = delete;
+        DisableCopyConstruction& operator=(
+            const DisableCopyConstruction&) = delete;
+    };
+
+    class DisableMoveConstruction
+    {
+    protected:
+        DisableMoveConstruction() = default;
+        ~DisableMoveConstruction() = default;
+
+    private:
+        DisableMoveConstruction(
+            const DisableMoveConstruction&&) = delete;
+        DisableMoveConstruction& operator=(
+            const DisableMoveConstruction&&) = delete;
+    };
+
+    template<typename TaskHandlerType>
+    class ScopeExitTaskHandler :
+        DisableCopyConstruction,
+        DisableMoveConstruction
+    {
+    private:
+        bool m_Canceled;
+        TaskHandlerType m_TaskHandler;
+
+    public:
+
+        explicit ScopeExitTaskHandler(TaskHandlerType&& EventHandler) :
+            m_Canceled(false),
+            m_TaskHandler(std::forward<TaskHandlerType>(EventHandler))
+        {
+
+        }
+
+        ~ScopeExitTaskHandler()
+        {
+            if (!this->m_Canceled)
+            {
+                this->m_TaskHandler();
+            }
+        }
+
+        void Cancel()
+        {
+            this->m_Canceled = true;
+        }
+    };
+
+    LPVOID AllocateMemory(
+        _In_ SIZE_T Size) noexcept
+    {
+        return ::HeapAlloc(::GetProcessHeap(), HEAP_ZERO_MEMORY, Size);
+    }
+
+    LPVOID ReallocateMemory(
+        _In_ PVOID Block,
+        _In_ SIZE_T Size) noexcept
+    {
+        return ::HeapReAlloc(::GetProcessHeap(), HEAP_ZERO_MEMORY, Block, Size);
+    }
+
+    BOOL FreeMemory(
+        _In_ LPVOID Block) noexcept
+    {
+        return ::HeapFree(::GetProcessHeap(), 0, Block);
+    }
+
+    DWORD GetActiveSessionID()
+    {
+        DWORD Count = 0;
+        PWTS_SESSION_INFOW pSessionInfo = nullptr;
+        if (::WTSEnumerateSessionsW(
+            WTS_CURRENT_SERVER_HANDLE,
+            0,
+            1,
+            &pSessionInfo,
+            &Count))
+        {
+            for (DWORD i = 0; i < Count; ++i)
+            {
+                if (pSessionInfo[i].State == WTS_CONNECTSTATE_CLASS::WTSActive)
+                {
+                    return pSessionInfo[i].SessionId;
+                }
+            }
+
+            ::WTSFreeMemory(pSessionInfo);
+        }
+
+        return static_cast<DWORD>(-1);
+    }
+
+    BOOL CreateSystemToken(
+        _In_ DWORD DesiredAccess,
+        _Out_ PHANDLE TokenHandle)
+    {
+        // If the specified process is the System Idle Process (0x00000000), the
+        // function fails and the last error code is ERROR_INVALID_PARAMETER.
+        // So this is why 0 is the default value of dwLsassPID and dwWinLogonPID.
+
+        // For fix the issue that @_kod0k and @DennyAmaro mentioned in
+        // https://forums.mydigitallife.net/threads/59268/page-28#post-1672011 and
+        // https://forums.mydigitallife.net/threads/59268/page-28#post-1674985.
+        // Mile::CreateSystemToken will try to open the access token from lsass.exe
+        // for maximum privileges in the access token, and try to open the access
+        // token from winlogon.exe of current active session as fallback.
+
+        // If no source process of SYSTEM access token can be found, the error code
+        // will be HRESULT_FROM_WIN32(ERROR_INVALID_PARAMETER).
+
+        DWORD dwLsassPID = 0;
+        DWORD dwWinLogonPID = 0;
+        PWTS_PROCESS_INFOW pProcesses = nullptr;
+        DWORD dwProcessCount = 0;
+        DWORD dwSessionID = ::GetActiveSessionID();
+
+        if (::WTSEnumerateProcessesW(
+            WTS_CURRENT_SERVER_HANDLE,
+            0,
+            1,
+            &pProcesses,
+            &dwProcessCount))
+        {
+            for (DWORD i = 0; i < dwProcessCount; ++i)
+            {
+                PWTS_PROCESS_INFOW pProcess = &pProcesses[i];
+
+                if ((!pProcess->pProcessName) ||
+                    (!pProcess->pUserSid) ||
+                    (!::IsWellKnownSid(
+                        pProcess->pUserSid,
+                        WELL_KNOWN_SID_TYPE::WinLocalSystemSid)))
+                {
+                    continue;
+                }
+
+                if ((0 == dwLsassPID) &&
+                    (0 == pProcess->SessionId) &&
+                    (0 == ::_wcsicmp(L"lsass.exe", pProcess->pProcessName)))
+                {
+                    dwLsassPID = pProcess->ProcessId;
+                    continue;
+                }
+
+                if ((0 == dwWinLogonPID) &&
+                    (dwSessionID == pProcess->SessionId) &&
+                    (0 == ::_wcsicmp(L"winlogon.exe", pProcess->pProcessName)))
+                {
+                    dwWinLogonPID = pProcess->ProcessId;
+                    continue;
+                }
+            }
+
+            ::WTSFreeMemory(pProcesses);
+        }
+
+        BOOL Result = FALSE;
+        HANDLE SystemProcessHandle = nullptr;
+
+        SystemProcessHandle = ::OpenProcess(
+            PROCESS_QUERY_INFORMATION,
+            FALSE,
+            dwLsassPID);
+        if (!SystemProcessHandle)
+        {
+            SystemProcessHandle = ::OpenProcess(
+                PROCESS_QUERY_INFORMATION,
+                FALSE,
+                dwWinLogonPID);
+        }
+
+        if (SystemProcessHandle)
+        {
+            HANDLE SystemTokenHandle = nullptr;
+            if (::OpenProcessToken(
+                SystemProcessHandle,
+                TOKEN_DUPLICATE,
+                &SystemTokenHandle))
+            {
+                Result = ::DuplicateTokenEx(
+                    SystemTokenHandle,
+                    DesiredAccess,
+                    nullptr,
+                    SecurityIdentification,
+                    TokenPrimary,
+                    TokenHandle);
+
+                ::CloseHandle(SystemTokenHandle);
+            }
+
+            ::CloseHandle(SystemProcessHandle);
+        }
+
+        return Result;
+    }
+
+    BOOL StartWindowsService(
+        _In_ LPCWSTR ServiceName,
+        _Out_ LPSERVICE_STATUS_PROCESS ServiceStatus)
+    {
+        BOOL Result = FALSE;
+
+        if (ServiceStatus && ServiceName)
+        {
+            ::memset(ServiceStatus, 0, sizeof(LPSERVICE_STATUS_PROCESS));
+
+            SC_HANDLE ServiceControlManagerHandle = ::OpenSCManagerW(
+                nullptr,
+                nullptr,
+                SC_MANAGER_CONNECT);
+            if (ServiceControlManagerHandle)
+            {
+                SC_HANDLE ServiceHandle = ::OpenServiceW(
+                    ServiceControlManagerHandle,
+                    ServiceName,
+                    SERVICE_QUERY_STATUS | SERVICE_START);
+                if (ServiceHandle)
+                {
+                    DWORD nBytesNeeded = 0;
+                    DWORD nOldCheckPoint = 0;
+                    ULONGLONG nLastTick = 0;
+                    bool bStartServiceWCalled = false;
+
+                    while (::QueryServiceStatusEx(
+                        ServiceHandle,
+                        SC_STATUS_PROCESS_INFO,
+                        reinterpret_cast<LPBYTE>(ServiceStatus),
+                        sizeof(SERVICE_STATUS_PROCESS),
+                        &nBytesNeeded))
+                    {
+                        if (SERVICE_RUNNING == ServiceStatus->dwCurrentState)
+                        {
+                            Result = TRUE;
+                            break;
+                        }
+                        else if (SERVICE_STOPPED == ServiceStatus->dwCurrentState)
+                        {
+                            // Failed if the service had stopped again.
+                            if (bStartServiceWCalled)
+                            {
+                                Result = FALSE;
+                                ::SetLastError(ERROR_FUNCTION_FAILED);
+                                break;
+                            }
+
+                            Result = ::StartServiceW(
+                                ServiceHandle,
+                                0,
+                                nullptr);
+                            if (!Result)
+                            {
+                                break;
+                            }
+
+                            bStartServiceWCalled = true;
+                        }
+                        else if (
+                            SERVICE_STOP_PENDING
+                            == ServiceStatus->dwCurrentState ||
+                            SERVICE_START_PENDING
+                            == ServiceStatus->dwCurrentState)
+                        {
+                            ULONGLONG nCurrentTick = ::GetTickCount();
+
+                            if (!nLastTick)
+                            {
+                                nLastTick = nCurrentTick;
+                                nOldCheckPoint = ServiceStatus->dwCheckPoint;
+
+                                // Same as the .Net System.ServiceProcess, wait
+                                // 250ms.
+                                ::SleepEx(250, FALSE);
+                            }
+                            else
+                            {
+                                // Check the timeout if the checkpoint is not
+                                // increased.
+                                if (ServiceStatus->dwCheckPoint
+                                    <= nOldCheckPoint)
+                                {
+                                    ULONGLONG nDiff = nCurrentTick - nLastTick;
+                                    if (nDiff > ServiceStatus->dwWaitHint)
+                                    {
+                                        Result = FALSE;
+                                        ::SetLastError(ERROR_TIMEOUT);
+                                        break;
+                                    }
+                                }
+
+                                // Continue looping.
+                                nLastTick = 0;
+                            }
+                        }
+                        else
+                        {
+                            break;
+                        }
+                    }
+
+                    ::CloseServiceHandle(ServiceHandle);
+                }
+
+                ::CloseServiceHandle(ServiceControlManagerHandle);
+            }
+        }
+        else
+        {
+            ::SetLastError(ERROR_INVALID_PARAMETER);
+        }
+
+        return Result;
+    }
+
+    BOOL OpenProcessTokenByProcessId(
+        _In_ DWORD ProcessId,
+        _In_ DWORD DesiredAccess,
+        _Out_ PHANDLE TokenHandle)
+    {
+        BOOL Result = FALSE;
+
+        HANDLE ProcessHandle = ::OpenProcess(
+            PROCESS_QUERY_INFORMATION,
+            FALSE,
+            ProcessId);
+        if (ProcessHandle)
+        {
+            Result = ::OpenProcessToken(
+                ProcessHandle,
+                DesiredAccess,
+                TokenHandle);
+
+            ::CloseHandle(ProcessHandle);
+        }
+
+        return Result;
+    }
+
+    BOOL OpenServiceProcessToken(
+        _In_ LPCWSTR ServiceName,
+        _In_ DWORD DesiredAccess,
+        _Out_ PHANDLE TokenHandle)
+    {
+        BOOL Result = FALSE;
+
+        SERVICE_STATUS_PROCESS ServiceStatus;
+        if (::StartWindowsService(
+            ServiceName,
+            &ServiceStatus))
+        {
+            Result = ::OpenProcessTokenByProcessId(
+                ServiceStatus.dwProcessId,
+                DesiredAccess,
+                TokenHandle);
+        }
+
+        return Result;
+    }
+
+    BOOL AdjustTokenPrivilegesSimple(
+        _In_ HANDLE TokenHandle,
+        _In_ PLUID_AND_ATTRIBUTES Privileges,
+        _In_ DWORD PrivilegeCount)
+    {
+        BOOL Result = FALSE;
+
+        if (Privileges && PrivilegeCount)
+        {
+            DWORD PrivilegesSize = sizeof(LUID_AND_ATTRIBUTES) * PrivilegeCount;
+            DWORD TokenPrivilegesSize = PrivilegesSize + sizeof(DWORD);
+
+            PTOKEN_PRIVILEGES TokenPrivileges =
+                reinterpret_cast<PTOKEN_PRIVILEGES>(
+                    ::AllocateMemory(TokenPrivilegesSize));
+            if (TokenPrivileges)
+            {
+                TokenPrivileges->PrivilegeCount = PrivilegeCount;
+                std::memcpy(
+                    TokenPrivileges->Privileges,
+                    Privileges,
+                    PrivilegesSize);
+
+                ::AdjustTokenPrivileges(
+                    TokenHandle,
+                    FALSE,
+                    TokenPrivileges,
+                    TokenPrivilegesSize,
+                    nullptr,
+                    nullptr);
+                Result = (ERROR_SUCCESS == ::GetLastError());
+
+                ::FreeMemory(TokenPrivileges);
+            }
+            else
+            {
+                ::SetLastError(ERROR_NOT_ENOUGH_MEMORY);
+            }
+        }
+        else
+        {
+            ::SetLastError(ERROR_INVALID_PARAMETER);
+        }
+
+        return Result;
+    }
+
+    BOOL GetTokenInformationWithMemory(
+        _In_ HANDLE TokenHandle,
+        _In_ TOKEN_INFORMATION_CLASS TokenInformationClass,
+        _Out_ PVOID* OutputInformation)
+    {
+        if (!OutputInformation)
+        {
+            ::SetLastError(ERROR_INVALID_PARAMETER);
+            return FALSE;
+        }
+
+        *OutputInformation = nullptr;
+
+        BOOL Result = FALSE;
+
+        DWORD Length = 0;
+        ::GetTokenInformation(
+            TokenHandle,
+            TokenInformationClass,
+            nullptr,
+            0,
+            &Length);
+        if (ERROR_INSUFFICIENT_BUFFER == ::GetLastError())
+        {
+            *OutputInformation = ::AllocateMemory(Length);
+            if (*OutputInformation)
+            {
+                Result = ::GetTokenInformation(
+                    TokenHandle,
+                    TokenInformationClass,
+                    *OutputInformation,
+                    Length,
+                    &Length);
+                if (!Result)
+                {
+                    ::FreeMemory(*OutputInformation);
+                    *OutputInformation = nullptr;
+                }
+            }
+            else
+            {
+                ::SetLastError(ERROR_NOT_ENOUGH_MEMORY);
+            }
+        }
+
+        return Result;
+    }
+
+    BOOL AdjustTokenAllPrivileges(
+        _In_ HANDLE TokenHandle,
+        _In_ DWORD Attributes)
+    {
+        BOOL Result = FALSE;
+
+        PTOKEN_PRIVILEGES pTokenPrivileges = nullptr;
+        if (::GetTokenInformationWithMemory(
+            TokenHandle,
+            TokenPrivileges,
+            reinterpret_cast<PVOID*>(&pTokenPrivileges)))
+        {
+            for (DWORD i = 0; i < pTokenPrivileges->PrivilegeCount; ++i)
+            {
+                pTokenPrivileges->Privileges[i].Attributes = Attributes;
+            }
+
+            Result = ::AdjustTokenPrivilegesSimple(
+                TokenHandle,
+                pTokenPrivileges->Privileges,
+                pTokenPrivileges->PrivilegeCount);
+
+            ::FreeMemory(pTokenPrivileges);
+        }
+
+        return Result;
+    }
+
+    enum class TargetProcessTokenLevel : std::uint32_t
+    {
+        Standard = 0,
+        System = 1,
+        TrustedInstaller = 2,
+    };
+
+    BOOL SimpleCreateProcess(
+        _In_ TargetProcessTokenLevel TokenLevel,
+        _In_ bool Privileged,
+        _Inout_ LPWSTR lpCommandLine,
+        _In_opt_ LPCWSTR lpCurrentDirectory,
+        _In_ LPSTARTUPINFOW lpStartupInfo,
+        _Out_ LPPROCESS_INFORMATION lpProcessInformation)
+    {
+        BOOL Result = FALSE;
+        DWORD Error = ERROR_SUCCESS;
+
+        HANDLE CurrentProcessTokenHandle = INVALID_HANDLE_VALUE;
+        HANDLE ImpersonatedCurrentProcessTokenHandle = INVALID_HANDLE_VALUE;
+        LUID_AND_ATTRIBUTES RawPrivilege;
+        DWORD SessionID = static_cast<DWORD>(-1);
+        HANDLE SystemTokenHandle = INVALID_HANDLE_VALUE;
+        HANDLE ImpersonatedSystemTokenHandle = INVALID_HANDLE_VALUE;
+        HANDLE TrustedInstallerTokenHandle = INVALID_HANDLE_VALUE;
+        HANDLE TargetTokenHandle = INVALID_HANDLE_VALUE;
+        LPVOID EnvironmentBlock = nullptr;
+
+        auto Handler = ::ScopeExitTaskHandler([&]()
+        {
+            if (EnvironmentBlock)
+            {
+                ::DestroyEnvironmentBlock(EnvironmentBlock);
+            }
+
+            if (TargetTokenHandle != INVALID_HANDLE_VALUE)
+            {
+                ::CloseHandle(TargetTokenHandle);
+            }
+
+            if (TrustedInstallerTokenHandle != INVALID_HANDLE_VALUE)
+            {
+                ::CloseHandle(TrustedInstallerTokenHandle);
+            }
+
+            if (ImpersonatedSystemTokenHandle != INVALID_HANDLE_VALUE)
+            {
+                ::CloseHandle(ImpersonatedSystemTokenHandle);
+            }
+
+            if (SystemTokenHandle != INVALID_HANDLE_VALUE)
+            {
+                ::CloseHandle(SystemTokenHandle);
+            }
+
+            if (ImpersonatedCurrentProcessTokenHandle != INVALID_HANDLE_VALUE)
+            {
+                ::CloseHandle(ImpersonatedCurrentProcessTokenHandle);
+            }
+
+            if (CurrentProcessTokenHandle != INVALID_HANDLE_VALUE)
+            {
+                ::CloseHandle(CurrentProcessTokenHandle);
+            }
+
+            ::SetThreadToken(nullptr, nullptr);
+
+            if (!Result)
+            {
+                ::SetLastError(Error);
+            }
+        });
+
+        if (!::OpenProcessToken(
+            ::GetCurrentProcess(),
+            MAXIMUM_ALLOWED,
+            &CurrentProcessTokenHandle))
+        {
+            Error = ::GetLastError();
+            return Result;
+        }
+
+        if (!::DuplicateTokenEx(
+            CurrentProcessTokenHandle,
+            MAXIMUM_ALLOWED,
+            nullptr,
+            SecurityImpersonation,
+            TokenImpersonation,
+            &ImpersonatedCurrentProcessTokenHandle))
+        {
+            Error = ::GetLastError();
+            return Result;
+        }
+
+        if (!::LookupPrivilegeValueW(
+            nullptr,
+            SE_DEBUG_NAME,
+            &RawPrivilege.Luid))
+        {
+            Error = ::GetLastError();
+            return Result;
+        }
+
+        RawPrivilege.Attributes = SE_PRIVILEGE_ENABLED;
+
+        if (!::AdjustTokenPrivilegesSimple(
+            ImpersonatedCurrentProcessTokenHandle,
+            &RawPrivilege,
+            1))
+        {
+            Error = ::GetLastError();
+            return Result;
+        }
+
+        if (!::SetThreadToken(
+            nullptr,
+            ImpersonatedCurrentProcessTokenHandle))
+        {
+            Error = ::GetLastError();
+            return Result;
+        }
+
+        SessionID = ::GetActiveSessionID();
+        if (SessionID == static_cast<DWORD>(-1))
+        {
+            Error = ERROR_NO_TOKEN;
+            return Result;
+        }
+
+        if (!::CreateSystemToken(
+            MAXIMUM_ALLOWED,
+            &SystemTokenHandle))
+        {
+            Error = ::GetLastError();
+            return Result;
+        }
+
+        if (!::DuplicateTokenEx(
+            SystemTokenHandle,
+            MAXIMUM_ALLOWED,
+            nullptr,
+            SecurityImpersonation,
+            TokenImpersonation,
+            &ImpersonatedSystemTokenHandle))
+        {
+            Error = ::GetLastError();
+            return Result;
+        }
+
+        if (!::AdjustTokenAllPrivileges(
+            ImpersonatedSystemTokenHandle,
+            SE_PRIVILEGE_ENABLED))
+        {
+            Error = ::GetLastError();
+            return Result;
+        }
+
+        if (!::SetThreadToken(
+            nullptr,
+            ImpersonatedSystemTokenHandle))
+        {
+            Error = ::GetLastError();
+            return Result;
+        }
+
+        if (TargetProcessTokenLevel::Standard == TokenLevel)
+        {
+            if (!::DuplicateTokenEx(
+                CurrentProcessTokenHandle,
+                MAXIMUM_ALLOWED,
+                nullptr,
+                SecurityIdentification,
+                TokenPrimary,
+                &TargetTokenHandle))
+            {
+                Error = ::GetLastError();
+                return Result;
+            }
+        }
+        else if (TargetProcessTokenLevel::System == TokenLevel)
+        {
+            if (!::DuplicateTokenEx(
+                SystemTokenHandle,
+                MAXIMUM_ALLOWED,
+                nullptr,
+                SecurityIdentification,
+                TokenPrimary,
+                &TargetTokenHandle))
+            {
+                Error = ::GetLastError();
+                return Result;
+            }
+        }
+        else if (TargetProcessTokenLevel::TrustedInstaller == TokenLevel)
+        {
+            if (!::OpenServiceProcessToken(
+                L"TrustedInstaller",
+                MAXIMUM_ALLOWED,
+                &TrustedInstallerTokenHandle))
+            {
+                Error = ::GetLastError();
+                return Result;
+            }
+
+            if (!::DuplicateTokenEx(
+                TrustedInstallerTokenHandle,
+                MAXIMUM_ALLOWED,
+                nullptr,
+                SecurityIdentification,
+                TokenPrimary,
+                &TargetTokenHandle))
+            {
+                Error = ::GetLastError();
+                return Result;
+            }
+        }
+        else
+        {
+            Error = ERROR_INVALID_PARAMETER;
+            return Result;
+        }
+
+        if (!::SetTokenInformation(
+            TargetTokenHandle,
+            TokenSessionId,
+            (PVOID)&SessionID,
+            sizeof(DWORD)))
+        {
+            Error = ::GetLastError();
+            return Result;
+        }
+
+        if (Privileged)
+        {
+            if (!::AdjustTokenAllPrivileges(
+                TargetTokenHandle,
+                SE_PRIVILEGE_ENABLED))
+            {
+                Error = ::GetLastError();
+                return Result;
+            }
+        }
+
+        if (!::CreateEnvironmentBlock(
+            &EnvironmentBlock,
+            CurrentProcessTokenHandle,
+            TRUE))
+        {
+            Error = ::GetLastError();
+            return Result;
+        }
+
+        Result = ::CreateProcessAsUserW(
+            TargetTokenHandle,
+            nullptr,
+            lpCommandLine,
+            nullptr,
+            nullptr,
+            TRUE,
+            CREATE_UNICODE_ENVIRONMENT,
+            EnvironmentBlock,
+            lpCurrentDirectory,
+            lpStartupInfo,
+            lpProcessInformation);
+
+        return Result;
+    }
 }
 
 int main()
@@ -552,20 +1317,46 @@ int main()
     bool NoLogo = false;
     bool Verbose = false;
     std::wstring WorkDir;
+    TargetProcessTokenLevel TargetLevel = TargetProcessTokenLevel::Standard;
+    bool Privileged = false;
 
     for (auto& OptionAndParameter : OptionsAndParameters)
     {
-        if (0 == _wcsicmp(OptionAndParameter.first.c_str(), L"NoLogo"))
+        if (0 == _wcsicmp(
+            OptionAndParameter.first.c_str(),
+            L"NoLogo"))
         {
             NoLogo = true;
         }
-        else if (0 == _wcsicmp(OptionAndParameter.first.c_str(), L"Verbose"))
+        else if (0 == _wcsicmp(
+            OptionAndParameter.first.c_str(),
+            L"Verbose"))
         {
             Verbose = true;
         }
-        else if (0 == _wcsicmp(OptionAndParameter.first.c_str(), L"WorkDir"))
+        else if (0 == _wcsicmp(
+            OptionAndParameter.first.c_str(),
+            L"WorkDir"))
         {
             WorkDir = OptionAndParameter.second;
+        }
+        else if (0 == _wcsicmp(
+            OptionAndParameter.first.c_str(),
+            L"System"))
+        {
+            TargetLevel = TargetProcessTokenLevel::System;
+        }
+        else if (0 == _wcsicmp(
+            OptionAndParameter.first.c_str(),
+            L"TrustedInstaller"))
+        {
+            TargetLevel = TargetProcessTokenLevel::TrustedInstaller;
+        }
+        else if (0 == _wcsicmp(
+            OptionAndParameter.first.c_str(),
+            L"Privileged"))
+        {
+            Privileged = true;
         }
     }
 
@@ -590,7 +1381,12 @@ int main()
                 L"\r\n");
             return 0;
         }
-        else if (!(NoLogo || Verbose || !WorkDir.empty()))
+        else if (!(
+            NoLogo ||
+            Verbose ||
+            !WorkDir.empty() ||
+            TargetLevel != TargetProcessTokenLevel::Standard ||
+            Privileged))
         {
             ShowInvalidCommandLine = true;
         }
@@ -646,14 +1442,10 @@ int main()
         STARTUPINFOW StartupInfo = { 0 };
         PROCESS_INFORMATION ProcessInformation = { 0 };
         StartupInfo.cb = sizeof(STARTUPINFOW);
-        if (::CreateProcessW(
-            nullptr,
+        if (::SimpleCreateProcess(
+            TargetLevel,
+            Privileged,
             const_cast<LPWSTR>(UnresolvedCommandLine.c_str()),
-            nullptr,
-            nullptr,
-            TRUE,
-            0,
-            nullptr,
             WorkDir.empty() ? nullptr : WorkDir.c_str(),
             &StartupInfo,
             &ProcessInformation))
@@ -689,6 +1481,18 @@ int main()
             ? ::GetWorkingDirectory()
             : WorkDir;
         TargetCommandLine += L"\" ";
+        if (TargetLevel == TargetProcessTokenLevel::System)
+        {
+            TargetCommandLine += L"--System ";
+        }
+        else if (TargetLevel == TargetProcessTokenLevel::TrustedInstaller)
+        {
+            TargetCommandLine += L"--TrustedInstaller ";
+        }
+        if (Privileged)
+        {
+            TargetCommandLine += L"--Privileged ";
+        }
         TargetCommandLine += UnresolvedCommandLine;
 
         SHELLEXECUTEINFOW Information = { 0 };
