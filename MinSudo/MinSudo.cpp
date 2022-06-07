@@ -1429,6 +1429,15 @@ int main()
         ::WriteToConsole(VerboseInformation.c_str());
     }
 
+    if (WorkDir.empty())
+    {
+        WorkDir = std::wstring(::GetWorkingDirectory());
+    }
+    if (L'\\' == WorkDir.back())
+    {
+        WorkDir.pop_back();
+    }
+
     if (::IsCurrentProcessElevated())
     {
         ::FreeConsole();
@@ -1446,7 +1455,7 @@ int main()
             TargetLevel,
             Privileged,
             const_cast<LPWSTR>(UnresolvedCommandLine.c_str()),
-            WorkDir.empty() ? nullptr : WorkDir.c_str(),
+            WorkDir.c_str(),
             &StartupInfo,
             &ProcessInformation))
         {
@@ -1477,9 +1486,7 @@ int main()
             TargetCommandLine += L"--Verbose ";
         }
         TargetCommandLine += L"--WorkDir=\"";
-        TargetCommandLine += WorkDir.empty()
-            ? ::GetWorkingDirectory()
-            : WorkDir;
+        TargetCommandLine += WorkDir;
         TargetCommandLine += L"\" ";
         if (TargetLevel == TargetProcessTokenLevel::System)
         {
