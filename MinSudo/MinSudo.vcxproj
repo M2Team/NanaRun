@@ -9,6 +9,15 @@
     <MileProjectType>ConsoleApplication</MileProjectType>
     <MileProjectManifestFile>MinSudo.manifest</MileProjectManifestFile>
     <MileProjectEnableVCLTLSupport>true</MileProjectEnableVCLTLSupport>
+    <MileProjectUseProjectProperties>true</MileProjectUseProjectProperties>
+    <MileProjectCompanyName>M2-Team</MileProjectCompanyName>
+    <MileProjectFileDescription>MinSudo - Lightweight POSIX-style Sudo implementation for Windows</MileProjectFileDescription>
+    <MileProjectInternalName>MinSudo</MileProjectInternalName>
+    <MileProjectLegalCopyright>© M2-Team and Contributors. All rights reserved.</MileProjectLegalCopyright>
+    <MileProjectOriginalFilename>MinSudo.exe</MileProjectOriginalFilename>
+    <MileProjectProductName>NanaRun</MileProjectProductName>
+    <MileProjectVersion>1.0.18.0</MileProjectVersion>
+    <MileProjectVersionTag>Preview 2</MileProjectVersionTag>
   </PropertyGroup>
   <Import Project="..\Mile.Project.Windows\Mile.Project.Cpp.props" />
   <ItemDefinitionGroup>
@@ -24,7 +33,6 @@
     <Manifest Include="MinSudo.manifest" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Mile.Project.Properties.h" />
     <ClInclude Include="resource.h" />
   </ItemGroup>
   <ItemGroup>

@@ -6,7 +6,4 @@
   <ItemGroup>
     <Manifest Include="NanaRunConsole.manifest" />
   </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="Mile.Project.Properties.h" />
-  </ItemGroup>
 </Project>

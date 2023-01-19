@@ -23,7 +23,7 @@
 #include <string>
 #include <vector>
 
-#include "Mile.Project.Properties.h"
+#include <Mile.Project.Version.h>
 
 #include "resource.h"
 

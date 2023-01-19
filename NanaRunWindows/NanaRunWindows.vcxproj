@@ -10,6 +10,15 @@
     <MileProjectType>WindowsApplication</MileProjectType>
     <MileProjectManifestFile>NanaRunWindows.manifest</MileProjectManifestFile>
     <MileProjectEnableVCLTLSupport>true</MileProjectEnableVCLTLSupport>
+    <MileProjectUseProjectProperties>true</MileProjectUseProjectProperties>
+    <MileProjectCompanyName>M2-Team</MileProjectCompanyName>
+    <MileProjectFileDescription>NanaRun (Windows)</MileProjectFileDescription>
+    <MileProjectInternalName>NanaRunWindows</MileProjectInternalName>
+    <MileProjectLegalCopyright>© M2-Team and Contributors. All rights reserved.</MileProjectLegalCopyright>
+    <MileProjectOriginalFilename>NanaRunG.exe</MileProjectOriginalFilename>
+    <MileProjectProductName>NanaRun</MileProjectProductName>
+    <MileProjectVersion>1.0.18.0</MileProjectVersion>
+    <MileProjectVersionTag>Preview 2</MileProjectVersionTag>
   </PropertyGroup>
   <Import Project="..\Mile.Project.Windows\Mile.Project.Cpp.props" />
   <ItemDefinitionGroup>
@@ -23,9 +32,6 @@
   </ItemGroup>
   <ItemGroup>
     <Manifest Include="NanaRunWindows.manifest" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="Mile.Project.Properties.h" />
   </ItemGroup>
   <Import Project="..\Mile.Project.Windows\Mile.Project.Cpp.targets" />
 </Project>
