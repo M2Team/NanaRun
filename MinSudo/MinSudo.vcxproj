@@ -16,7 +16,7 @@
     <MileProjectLegalCopyright>© M2-Team and Contributors. All rights reserved.</MileProjectLegalCopyright>
     <MileProjectOriginalFilename>MinSudo.exe</MileProjectOriginalFilename>
     <MileProjectProductName>NanaRun</MileProjectProductName>
-    <MileProjectVersion>1.0.18.0</MileProjectVersion>
+    <MileProjectVersion>1.0.$([System.DateTime]::Today.Subtract($([System.DateTime]::Parse('2022-05-16'))).TotalDays).0</MileProjectVersion>
     <MileProjectVersionTag>Preview 2</MileProjectVersionTag>
   </PropertyGroup>
   <Import Project="..\Mile.Project.Windows\Mile.Project.Cpp.props" />
