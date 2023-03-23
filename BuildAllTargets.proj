@@ -2,30 +2,15 @@
 <Project 
   DefaultTargets="Restore;Build"
   xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <PropertyGroup>
-    <SolutionPath>$(MSBuildThisFileDirectory)NanaRun.sln</SolutionPath>
-  </PropertyGroup>
-  <ItemGroup>
-    <ProjectReference Include="$(SolutionPath)">
-      <AdditionalProperties>Configuration=Debug;Platform=x86</AdditionalProperties>   
-    </ProjectReference>
-    <ProjectReference Include="$(SolutionPath)">
-      <AdditionalProperties>Configuration=Release;Platform=x86</AdditionalProperties>   
-    </ProjectReference>
-    <ProjectReference Include="$(SolutionPath)">
-      <AdditionalProperties>Configuration=Debug;Platform=x64</AdditionalProperties>   
-    </ProjectReference>
-    <ProjectReference Include="$(SolutionPath)">
-      <AdditionalProperties>Configuration=Release;Platform=x64</AdditionalProperties>   
-    </ProjectReference>
-    <ProjectReference Include="$(SolutionPath)">
-      <AdditionalProperties>Configuration=Debug;Platform=ARM64</AdditionalProperties>   
-    </ProjectReference>
-    <ProjectReference Include="$(SolutionPath)">
-      <AdditionalProperties>Configuration=Release;Platform=ARM64</AdditionalProperties>   
-    </ProjectReference>
-  </ItemGroup>
   <Target Name="Restore" >
+    <ItemGroup>
+      <ProjectReference Include="$(MSBuildThisFileDirectory)NanaRun.sln">
+        <AdditionalProperties>Configuration=Debug;Platform=x86</AdditionalProperties>   
+      </ProjectReference>
+      <ProjectReference Include="$(MSBuildThisFileDirectory)NanaRun.sln">
+        <AdditionalProperties>Configuration=Release;Platform=x86</AdditionalProperties>   
+      </ProjectReference>
+    </ItemGroup>
     <MSBuild
       Projects="@(ProjectReference)"
       Targets="Restore"
@@ -33,6 +18,26 @@
       Properties="PreferredToolArchitecture=x64" />
   </Target>
   <Target Name="Build" >
+    <ItemGroup>
+      <ProjectReference Include="$(MSBuildThisFileDirectory)NanaRun.sln">
+        <AdditionalProperties>Configuration=Debug;Platform=x86</AdditionalProperties>   
+      </ProjectReference>
+      <ProjectReference Include="$(MSBuildThisFileDirectory)NanaRun.sln">
+        <AdditionalProperties>Configuration=Release;Platform=x86</AdditionalProperties>   
+      </ProjectReference>
+      <ProjectReference Include="$(MSBuildThisFileDirectory)NanaRun.sln">
+        <AdditionalProperties>Configuration=Debug;Platform=x64</AdditionalProperties>   
+      </ProjectReference>
+      <ProjectReference Include="$(MSBuildThisFileDirectory)NanaRun.sln">
+        <AdditionalProperties>Configuration=Release;Platform=x64</AdditionalProperties>   
+      </ProjectReference>
+      <ProjectReference Include="$(MSBuildThisFileDirectory)NanaRun.sln">
+        <AdditionalProperties>Configuration=Debug;Platform=ARM64</AdditionalProperties>   
+      </ProjectReference>
+      <ProjectReference Include="$(MSBuildThisFileDirectory)NanaRun.sln">
+        <AdditionalProperties>Configuration=Release;Platform=ARM64</AdditionalProperties>   
+      </ProjectReference>
+    </ItemGroup>
     <MSBuild
       Projects="@(ProjectReference)"
       Targets="Build"
