@@ -27,6 +27,8 @@
 
 #include "resource.h"
 
+#include <Mile.Helpers.Base.h>
+
 namespace
 {
     std::vector<std::wstring> SpiltCommandLine(
@@ -282,34 +284,6 @@ namespace
         Path.resize(::GetCurrentDirectoryW(
             static_cast<DWORD>(Path.size()), &Path[0]));
         return Path;
-    }
-
-    bool IsCurrentProcessElevated()
-    {
-        bool Result = false;
-
-        HANDLE CurrentProcessAccessToken = nullptr;
-        if (::OpenProcessToken(
-            ::GetCurrentProcess(),
-            TOKEN_ALL_ACCESS,
-            &CurrentProcessAccessToken))
-        {
-            TOKEN_ELEVATION Information = { 0 };
-            DWORD Length = sizeof(Information);
-            if (::GetTokenInformation(
-                CurrentProcessAccessToken,
-                TOKEN_INFORMATION_CLASS::TokenElevation,
-                &Information,
-                Length,
-                &Length))
-            {
-                Result = Information.TokenIsElevated;
-            }
-
-            ::CloseHandle(CurrentProcessAccessToken);
-        }
-
-        return Result;
     }
 
     std::wstring ToWideString(
@@ -571,25 +545,6 @@ namespace
             this->m_Canceled = true;
         }
     };
-
-    LPVOID AllocateMemory(
-        _In_ SIZE_T Size) noexcept
-    {
-        return ::HeapAlloc(::GetProcessHeap(), HEAP_ZERO_MEMORY, Size);
-    }
-
-    LPVOID ReallocateMemory(
-        _In_ PVOID Block,
-        _In_ SIZE_T Size) noexcept
-    {
-        return ::HeapReAlloc(::GetProcessHeap(), HEAP_ZERO_MEMORY, Block, Size);
-    }
-
-    BOOL FreeMemory(
-        _In_ LPVOID Block) noexcept
-    {
-        return ::HeapFree(::GetProcessHeap(), 0, Block);
-    }
 
     DWORD GetActiveSessionID()
     {
@@ -896,7 +851,7 @@ namespace
 
             PTOKEN_PRIVILEGES TokenPrivileges =
                 reinterpret_cast<PTOKEN_PRIVILEGES>(
-                    ::AllocateMemory(TokenPrivilegesSize));
+                    ::MileAllocateMemory(TokenPrivilegesSize));
             if (TokenPrivileges)
             {
                 TokenPrivileges->PrivilegeCount = PrivilegeCount;
@@ -914,7 +869,7 @@ namespace
                     nullptr);
                 Result = (ERROR_SUCCESS == ::GetLastError());
 
-                ::FreeMemory(TokenPrivileges);
+                ::MileFreeMemory(TokenPrivileges);
             }
             else
             {
@@ -953,7 +908,7 @@ namespace
             &Length);
         if (ERROR_INSUFFICIENT_BUFFER == ::GetLastError())
         {
-            *OutputInformation = ::AllocateMemory(Length);
+            *OutputInformation = ::MileAllocateMemory(Length);
             if (*OutputInformation)
             {
                 Result = ::GetTokenInformation(
@@ -964,7 +919,7 @@ namespace
                     &Length);
                 if (!Result)
                 {
-                    ::FreeMemory(*OutputInformation);
+                    ::MileFreeMemory(*OutputInformation);
                     *OutputInformation = nullptr;
                 }
             }
@@ -999,7 +954,7 @@ namespace
                 pTokenPrivileges->Privileges,
                 pTokenPrivileges->PrivilegeCount);
 
-            ::FreeMemory(pTokenPrivileges);
+            ::MileFreeMemory(pTokenPrivileges);
         }
 
         return Result;
@@ -1438,7 +1393,7 @@ int main()
         WorkDir.pop_back();
     }
 
-    if (::IsCurrentProcessElevated())
+    if (::MileIsCurrentProcessElevated())
     {
         ::FreeConsole();
         ::AttachConsole(ATTACH_PARENT_PROCESS);
