@@ -613,123 +613,6 @@ namespace
         return Result;
     }
 
-    BOOL StartWindowsService(
-        _In_ LPCWSTR ServiceName,
-        _Out_ LPSERVICE_STATUS_PROCESS ServiceStatus)
-    {
-        BOOL Result = FALSE;
-
-        if (ServiceStatus && ServiceName)
-        {
-            ::memset(ServiceStatus, 0, sizeof(LPSERVICE_STATUS_PROCESS));
-
-            SC_HANDLE ServiceControlManagerHandle = ::OpenSCManagerW(
-                nullptr,
-                nullptr,
-                SC_MANAGER_CONNECT);
-            if (ServiceControlManagerHandle)
-            {
-                SC_HANDLE ServiceHandle = ::OpenServiceW(
-                    ServiceControlManagerHandle,
-                    ServiceName,
-                    SERVICE_QUERY_STATUS | SERVICE_START);
-                if (ServiceHandle)
-                {
-                    DWORD nBytesNeeded = 0;
-                    DWORD nOldCheckPoint = 0;
-                    ULONGLONG nLastTick = 0;
-                    bool bStartServiceWCalled = false;
-
-                    while (::QueryServiceStatusEx(
-                        ServiceHandle,
-                        SC_STATUS_PROCESS_INFO,
-                        reinterpret_cast<LPBYTE>(ServiceStatus),
-                        sizeof(SERVICE_STATUS_PROCESS),
-                        &nBytesNeeded))
-                    {
-                        if (SERVICE_RUNNING == ServiceStatus->dwCurrentState)
-                        {
-                            Result = TRUE;
-                            break;
-                        }
-                        else if (SERVICE_STOPPED == ServiceStatus->dwCurrentState)
-                        {
-                            // Failed if the service had stopped again.
-                            if (bStartServiceWCalled)
-                            {
-                                Result = FALSE;
-                                ::SetLastError(ERROR_FUNCTION_FAILED);
-                                break;
-                            }
-
-                            Result = ::StartServiceW(
-                                ServiceHandle,
-                                0,
-                                nullptr);
-                            if (!Result)
-                            {
-                                break;
-                            }
-
-                            bStartServiceWCalled = true;
-                        }
-                        else if (
-                            SERVICE_STOP_PENDING
-                            == ServiceStatus->dwCurrentState ||
-                            SERVICE_START_PENDING
-                            == ServiceStatus->dwCurrentState)
-                        {
-                            ULONGLONG nCurrentTick = ::GetTickCount();
-
-                            if (!nLastTick)
-                            {
-                                nLastTick = nCurrentTick;
-                                nOldCheckPoint = ServiceStatus->dwCheckPoint;
-
-                                // Same as the .Net System.ServiceProcess, wait
-                                // 250ms.
-                                ::SleepEx(250, FALSE);
-                            }
-                            else
-                            {
-                                // Check the timeout if the checkpoint is not
-                                // increased.
-                                if (ServiceStatus->dwCheckPoint
-                                    <= nOldCheckPoint)
-                                {
-                                    ULONGLONG nDiff = nCurrentTick - nLastTick;
-                                    if (nDiff > ServiceStatus->dwWaitHint)
-                                    {
-                                        Result = FALSE;
-                                        ::SetLastError(ERROR_TIMEOUT);
-                                        break;
-                                    }
-                                }
-
-                                // Continue looping.
-                                nLastTick = 0;
-                            }
-                        }
-                        else
-                        {
-                            break;
-                        }
-                    }
-
-                    ::CloseServiceHandle(ServiceHandle);
-                }
-
-                ::CloseServiceHandle(ServiceControlManagerHandle);
-            }
-        }
-        else
-        {
-            ::SetLastError(ERROR_INVALID_PARAMETER);
-        }
-
-        return Result;
-    }
-
     BOOL OpenProcessTokenByProcessId(
         _In_ DWORD ProcessId,
         _In_ DWORD DesiredAccess,
@@ -762,7 +645,7 @@ namespace
         BOOL Result = FALSE;
 
         SERVICE_STATUS_PROCESS ServiceStatus;
-        if (::StartWindowsService(
+        if (::MileStartService(
             ServiceName,
             &ServiceStatus))
         {
