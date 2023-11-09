@@ -27,7 +27,7 @@
 
 #include "resource.h"
 
-#include <Mile.Helpers.Base.h>
+#include <Mile.Helpers.CppBase.h>
 
 namespace
 {
@@ -286,68 +286,6 @@ namespace
         return Path;
     }
 
-    std::wstring ToWideString(
-        std::uint32_t CodePage,
-        std::string_view const& InputString)
-    {
-        std::wstring OutputString;
-
-        int OutputStringLength = ::MultiByteToWideChar(
-            CodePage,
-            0,
-            InputString.data(),
-            static_cast<int>(InputString.size()),
-            nullptr,
-            0);
-        if (OutputStringLength > 0)
-        {
-            OutputString.resize(OutputStringLength);
-            OutputStringLength = ::MultiByteToWideChar(
-                CodePage,
-                0,
-                InputString.data(),
-                static_cast<int>(InputString.size()),
-                &OutputString[0],
-                OutputStringLength);
-            OutputString.resize(OutputStringLength);
-        }
-
-        return OutputString;
-    }
-
-    std::string ToMultiByteString(
-        std::uint32_t CodePage,
-        std::wstring_view const& InputString)
-    {
-        std::string OutputString;
-
-        int OutputStringLength = ::WideCharToMultiByte(
-            CodePage,
-            0,
-            InputString.data(),
-            static_cast<int>(InputString.size()),
-            nullptr,
-            0,
-            nullptr,
-            nullptr);
-        if (OutputStringLength > 0)
-        {
-            OutputString.resize(OutputStringLength);
-            OutputStringLength = ::WideCharToMultiByte(
-                CodePage,
-                0,
-                InputString.data(),
-                static_cast<int>(InputString.size()),
-                &OutputString[0],
-                OutputStringLength,
-                nullptr,
-                nullptr);
-            OutputString.resize(OutputStringLength);
-        }
-
-        return OutputString;
-    }
-
     void WriteToConsole(
         std::wstring_view const& String)
     {
@@ -361,7 +299,7 @@ namespace
             &NumberOfCharsWritten,
             nullptr))
         {
-            std::string CurrentCodePageString = ::ToMultiByteString(
+            std::string CurrentCodePageString = Mile::ToString(
                 ::GetConsoleOutputCP(),
                 String);
 
@@ -480,7 +418,7 @@ namespace
 
             Result.emplace(std::pair(
                 std::string(KeyStart, KeyEnd - KeyStart),
-                ::ToWideString(
+                Mile::ToWideString(
                     CP_UTF8,
                     std::string(ValueStart, ValueEnd - ValueStart))));
         }
