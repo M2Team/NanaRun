@@ -180,61 +180,6 @@ namespace
         }
     }
 
-    typedef struct _RESOURCE_INFO
-    {
-        DWORD Size;
-        LPVOID Pointer;
-    } RESOURCE_INFO, * PRESOURCE_INFO;
-
-    BOOL SimpleLoadResource(
-        _Out_ PRESOURCE_INFO ResourceInfo,
-        _In_opt_ HMODULE ModuleHandle,
-        _In_ LPCWSTR Type,
-        _In_ LPCWSTR Name)
-    {
-        if (!ResourceInfo)
-        {
-            ::SetLastError(ERROR_INVALID_PARAMETER);
-            return FALSE;
-        }
-
-        std::memset(
-            ResourceInfo,
-            0,
-            sizeof(RESOURCE_INFO));
-
-        HRSRC ResourceFind = ::FindResourceExW(
-            ModuleHandle,
-            Type,
-            Name,
-            MAKELANGID(LANG_NEUTRAL, SUBLANG_NEUTRAL));
-        if (!ResourceFind)
-        {
-            return FALSE;
-        }
-
-        ResourceInfo->Size = ::SizeofResource(
-            ModuleHandle,
-            ResourceFind);
-        if (ResourceInfo->Size == 0)
-        {
-            return FALSE;
-        }
-
-        HGLOBAL ResourceLoad = ::LoadResource(
-            ModuleHandle,
-            ResourceFind);
-        if (!ResourceLoad)
-        {
-            return FALSE;
-        }
-
-        ResourceInfo->Pointer = ::LockResource(
-            ResourceLoad);
-
-        return TRUE;
-    }
-
     std::map<std::string, std::wstring> ParseStringDictionary(
         std::string_view const& Content)
     {
@@ -876,12 +821,13 @@ int main()
 
     std::map<std::string, std::wstring> StringDictionary;
 
-    RESOURCE_INFO ResourceInfo = { 0 };
-    if (::SimpleLoadResource(
+    MILE_RESOURCE_INFO ResourceInfo = { 0 };
+    if (::MileLoadResource(
         &ResourceInfo,
         ::GetModuleHandleW(nullptr),
         L"Translations",
-        MAKEINTRESOURCEW(IDR_TRANSLATIONS)))
+        MAKEINTRESOURCEW(IDR_TRANSLATIONS),
+        MAKELANGID(LANG_NEUTRAL, SUBLANG_NEUTRAL)))
     {
         StringDictionary = ::ParseStringDictionary(std::string_view(
             reinterpret_cast<const char*>(ResourceInfo.Pointer),
