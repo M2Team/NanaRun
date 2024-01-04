@@ -40,22 +40,33 @@
 ```
 - CommandLineHelp
 ```
-格式: MinSudo [ 选项 ] 命令
+格式: MinSudo [选项] 命令
 
 选项:
 
-  --NoLogo 隐藏版权信息。
-  --Verbose 显示详细信息。
-  --WorkDir=[ 路径 ] 设置工作目录。
-  --System 使用 System 而不是管理员执行。
-  --TrustedInstaller 使用 TrustedInstaller 而不是管理员执行。
-  --Privileged 启用全部特权。
+  --NoLogo, -NoL
+    隐藏版权信息。
 
-  --Version 显示版本信息。
+  --Verbose, -V
+    显示详细信息。
 
-  /? 显示该内容。
-  -H 显示该内容。
-  --Help 显示该内容。
+  --WorkDir=[路径], -WD=[路径]
+    设置工作目录。
+
+  --System, -S
+    使用 System 而不是管理员执行。
+
+  --TrustedInstaller, -TI
+    使用 TrustedInstaller 而不是管理员执行。
+
+  --Privileged, -P
+    启用全部特权。
+
+  --Version, -Ver
+    显示版本信息。
+
+  /?, -H, --Help
+    显示该内容。
 
 提示:
 

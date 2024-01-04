@@ -41,22 +41,33 @@ usage.)
 ```
 - CommandLineHelp
 ```
-Format: MinSudo [ Options ] Command
+Format: MinSudo [Options] Command
 
 Options:
 
-  --NoLogo Suppress copyright message.
-  --Verbose Show detailed information.
-  --WorkDir=[ Path ] Set working directory.
-  --System Run as System instead of Administrator.
-  --TrustedInstaller Run as TrustedInstaller instead of Administrator.
-  --Privileged Enable all privileges.
+  --NoLogo, -NoL
+    Suppress copyright message.
 
-  --Version Show version information.
+  --Verbose, -V
+    Show detailed information.
 
-  /? Show this content.
-  -H Show this content.
-  --Help Show this content.
+  --WorkDir=[Path], -WD=[Path]
+    Set working directory.
+
+  --System, -S
+    Run as System instead of Administrator.
+
+  --TrustedInstaller, -TI
+    Run as TrustedInstaller instead of Administrator.
+
+  --Privileged, -P
+    Enable all privileges.
+
+  --Version, -Ver
+    Show version information.
+
+  /?, -H, --Help
+    Show this content.
 
 Notes:
 

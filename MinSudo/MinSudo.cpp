@@ -852,41 +852,40 @@ int main()
     TargetProcessTokenLevel TargetLevel = TargetProcessTokenLevel::Standard;
     bool Privileged = false;
 
-    for (auto& OptionAndParameter : OptionsAndParameters)
+    for (auto& Current : OptionsAndParameters)
     {
-        if (0 == _wcsicmp(
-            OptionAndParameter.first.c_str(),
-            L"NoLogo"))
+        if (0 == _wcsicmp(Current.first.c_str(), L"NoLogo") ||
+            0 == _wcsicmp(Current.first.c_str(), L"NoL"))
         {
             NoLogo = true;
         }
-        else if (0 == _wcsicmp(
-            OptionAndParameter.first.c_str(),
-            L"Verbose"))
+        else if (
+            0 == _wcsicmp(Current.first.c_str(), L"Verbose") ||
+            0 == _wcsicmp(Current.first.c_str(), L"V"))
         {
             Verbose = true;
         }
-        else if (0 == _wcsicmp(
-            OptionAndParameter.first.c_str(),
-            L"WorkDir"))
+        else if (
+            0 == _wcsicmp(Current.first.c_str(), L"WorkDir") ||
+            0 == _wcsicmp(Current.first.c_str(), L"WD"))
         {
-            WorkDir = OptionAndParameter.second;
+            WorkDir = Current.second;
         }
-        else if (0 == _wcsicmp(
-            OptionAndParameter.first.c_str(),
-            L"System"))
+        else if (
+            0 == _wcsicmp(Current.first.c_str(), L"System") ||
+            0 == _wcsicmp(Current.first.c_str(), L"S"))
         {
             TargetLevel = TargetProcessTokenLevel::System;
         }
-        else if (0 == _wcsicmp(
-            OptionAndParameter.first.c_str(),
-            L"TrustedInstaller"))
+        else if (
+            0 == _wcsicmp(Current.first.c_str(), L"TrustedInstaller") ||
+            0 == _wcsicmp(Current.first.c_str(), L"TI"))
         {
             TargetLevel = TargetProcessTokenLevel::TrustedInstaller;
         }
-        else if (0 == _wcsicmp(
-            OptionAndParameter.first.c_str(),
-            L"Privileged"))
+        else if (
+            0 == _wcsicmp(Current.first.c_str(), L"Privileged") ||
+            0 == _wcsicmp(Current.first.c_str(), L"P"))
         {
             Privileged = true;
         }
@@ -897,15 +896,17 @@ int main()
 
     if (1 == OptionsAndParameters.size() && UnresolvedCommandLine.empty())
     {
-        auto OptionAndParameter = *OptionsAndParameters.begin();
+        auto Current = *OptionsAndParameters.begin();
 
-        if (0 == _wcsicmp(OptionAndParameter.first.c_str(), L"?") ||
-            0 == _wcsicmp(OptionAndParameter.first.c_str(), L"H") ||
-            0 == _wcsicmp(OptionAndParameter.first.c_str(), L"Help"))
+        if (0 == _wcsicmp(Current.first.c_str(), L"?") ||
+            0 == _wcsicmp(Current.first.c_str(), L"H") ||
+            0 == _wcsicmp(Current.first.c_str(), L"Help"))
         {
             ShowHelp = true;
         }
-        else if (0 == _wcsicmp(OptionAndParameter.first.c_str(), L"Version"))
+        else if (
+            0 == _wcsicmp(Current.first.c_str(), L"Version") ||
+            0 == _wcsicmp(Current.first.c_str(), L"Ver"))
         {
             ::WriteToConsole(
                 L"MinSudo " MILE_PROJECT_VERSION_STRING L" (Build "
