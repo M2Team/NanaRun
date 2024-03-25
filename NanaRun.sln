@@ -3,8 +3,6 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.2.32505.173
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "NanaRunWindows", "NanaRunWindows\NanaRunWindows.vcxproj", "{5B304166-4687-4416-98CB-28F7A3E79276}"
-EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "NanaRunConsole", "NanaRunConsole\NanaRunConsole.vcxproj", "{3D1A07C8-17B2-4E5F-AAC1-16BE522BD4D7}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "MinSudo", "MinSudo\MinSudo.vcxproj", "{99FA5072-6C05-4027-8C8B-EA3EC9BCF9E0}"
@@ -19,18 +17,6 @@ Global
 		Release|x86 = Release|x86
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{5B304166-4687-4416-98CB-28F7A3E79276}.Debug|ARM64.ActiveCfg = Debug|ARM64
-		{5B304166-4687-4416-98CB-28F7A3E79276}.Debug|ARM64.Build.0 = Debug|ARM64
-		{5B304166-4687-4416-98CB-28F7A3E79276}.Debug|x64.ActiveCfg = Debug|x64
-		{5B304166-4687-4416-98CB-28F7A3E79276}.Debug|x64.Build.0 = Debug|x64
-		{5B304166-4687-4416-98CB-28F7A3E79276}.Debug|x86.ActiveCfg = Debug|Win32
-		{5B304166-4687-4416-98CB-28F7A3E79276}.Debug|x86.Build.0 = Debug|Win32
-		{5B304166-4687-4416-98CB-28F7A3E79276}.Release|ARM64.ActiveCfg = Release|ARM64
-		{5B304166-4687-4416-98CB-28F7A3E79276}.Release|ARM64.Build.0 = Release|ARM64
-		{5B304166-4687-4416-98CB-28F7A3E79276}.Release|x64.ActiveCfg = Release|x64
-		{5B304166-4687-4416-98CB-28F7A3E79276}.Release|x64.Build.0 = Release|x64
-		{5B304166-4687-4416-98CB-28F7A3E79276}.Release|x86.ActiveCfg = Release|Win32
-		{5B304166-4687-4416-98CB-28F7A3E79276}.Release|x86.Build.0 = Release|Win32
 		{3D1A07C8-17B2-4E5F-AAC1-16BE522BD4D7}.Debug|ARM64.ActiveCfg = Debug|ARM64
 		{3D1A07C8-17B2-4E5F-AAC1-16BE522BD4D7}.Debug|ARM64.Build.0 = Debug|ARM64
 		{3D1A07C8-17B2-4E5F-AAC1-16BE522BD4D7}.Debug|x64.ActiveCfg = Debug|x64
