@@ -2,17 +2,16 @@
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup Label="Globals">
     <ProjectGuid>{3D1A07C8-17B2-4E5F-AAC1-16BE522BD4D7}</ProjectGuid>
-    <RootNamespace>NanaRunConsole</RootNamespace>
-    <TargetName>NanaRunC</TargetName>
+    <RootNamespace>NanaRun</RootNamespace>
     <MileProjectType>ConsoleApplication</MileProjectType>
-    <MileProjectManifestFile>NanaRunConsole.manifest</MileProjectManifestFile>
+    <MileProjectManifestFile>NanaRun.manifest</MileProjectManifestFile>
     <MileProjectEnableVCLTLSupport>true</MileProjectEnableVCLTLSupport>
     <MileProjectUseProjectProperties>true</MileProjectUseProjectProperties>
     <MileProjectCompanyName>M2-Team</MileProjectCompanyName>
     <MileProjectFileDescription>NanaRun (Console)</MileProjectFileDescription>
-    <MileProjectInternalName>NanaRunConsole</MileProjectInternalName>
+    <MileProjectInternalName>NanaRun</MileProjectInternalName>
     <MileProjectLegalCopyright>© M2-Team and Contributors. All rights reserved.</MileProjectLegalCopyright>
-    <MileProjectOriginalFilename>NanaRunC.exe</MileProjectOriginalFilename>
+    <MileProjectOriginalFilename>NanaRun.exe</MileProjectOriginalFilename>
     <MileProjectProductName>NanaRun</MileProjectProductName>
     <MileProjectVersion>1.0.$([System.DateTime]::Today.Subtract($([System.DateTime]::Parse('2022-05-16'))).TotalDays).0</MileProjectVersion>
     <MileProjectVersionTag>Preview 2</MileProjectVersionTag>
@@ -29,10 +28,10 @@
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="NanaRunConsole.cpp" />
+    <ClCompile Include="NanaRun.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <Manifest Include="NanaRunConsole.manifest" />
+    <Manifest Include="NanaRun.manifest" />
   </ItemGroup>
   <Import Project="..\Mile.Project.Windows\Mile.Project.Cpp.targets" />
 </Project>

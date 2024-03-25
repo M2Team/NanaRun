@@ -1,7 +1,7 @@
 ﻿/*
  * PROJECT:   NanaRun
- * FILE:      NanaRunConsole.cpp
- * PURPOSE:   Implementation for NanaRun (Console)
+ * FILE:      NanaRun.cpp
+ * PURPOSE:   Implementation for NanaRun
  *
  * LICENSE:   The MIT License
  *
