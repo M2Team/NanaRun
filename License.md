@@ -463,6 +463,6 @@ Creative Commons may be contacted at creativecommons.org.
 ### The third-party libraries used in NanaRun
 
 - C++/WinRT, https://github.com/microsoft/cppwinrt
-- Detours, https://github.com/microsoft/Detours
+- Mile.Detours, https://github.com/ProjectMile/Mile.Detours
 - Mile.Project.Windows, https://github.com/ProjectMile/Mile.Project.Windows
 - VC-LTL, https://github.com/Chuyu-Team/VC-LTL5
