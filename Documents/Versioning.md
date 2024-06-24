@@ -11,8 +11,11 @@ This document applies to all versions of NanaRun.
 
 ## The rule for build and revision number
 
-The build number is the number of days since May 16, 2022 because the first 
-version of NanaRun is created and published on that day.
+The build number is the number of days since May 1, 2024 because that day is the
+10th anniversary of the first version of NSudo is created and published.
+
+~~The build number is the number of days since May 16, 2022 because the first
+version of NanaRun is created and published on that day.~~
 
 The revision number is the number of releases releases in the day corresponding
 to the build number, and it counts from zero. So the first revision is 0 and 
