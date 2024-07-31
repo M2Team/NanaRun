@@ -755,16 +755,16 @@ int main()
     if (ParseError || ShowHelp)
     {
         std::printf(
-            "Format: SynthRdp [Command] <Option>\r\n"
+            "Format: SynthRdp [Command] <Option1> <Option2> ...\r\n"
             "\r\n"
             "Commands:\r\n"
             "\r\n"
             "  Help - Show this content.\r\n"
             "\r\n"
-            "  Install - Install SynthRdp service\r\n"
-            "  Uninstall - Uninstall SynthRdp service\r\n"
-            "  Start - Start SynthRdp service\r\n"
-            "  Stop - Stop SynthRdp service\r\n"
+            "  Install - Install SynthRdp service.\r\n"
+            "  Uninstall - Uninstall SynthRdp service.\r\n"
+            "  Start - Start SynthRdp service.\r\n"
+            "  Stop - Stop SynthRdp service.\r\n"
             "\r\n"
             "Notes:\r\n"
             "  - All command options are case-insensitive.\r\n"
