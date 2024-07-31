@@ -8,13 +8,433 @@
  * MAINTAINER: MouriNaruto (Kenji.Mouri@outlook.com)
  */
 
+#define _WINSOCKAPI_
+#include <Windows.h>
+
+#include <WinSock2.h>
+#include <WS2tcpip.h>
+#pragma comment(lib, "Ws2_32.lib")
+
 #include <Mile.Helpers.CppBase.h>
+
+#include <Mile.HyperV.VMBus.h>
+#include <Mile.HyperV.Windows.VMBusPipe.h>
 
 #include <Mile.Project.Version.h>
 
+EXTERN_C HANDLE WINAPI VmbusPipeClientTryOpenChannel(
+    _In_ LPCGUID InterfaceType,
+    _In_ LPCGUID InterfaceInstance,
+    _In_ DWORD TimeoutInMsec,
+    _In_ DWORD OpenMode)
+{
+    VMBUS_PIPE_CHANNEL_INFO ChannelInfo = { 0 };
+    if (::VmbusPipeClientWaitChannel(
+        InterfaceType,
+        InterfaceInstance,
+        TimeoutInMsec,
+        &ChannelInfo))
+    {
+        return ::VmbusPipeClientOpenChannel(
+            &ChannelInfo,
+            OpenMode);
+    }
+
+    return INVALID_HANDLE_VALUE;
+}
+
+namespace
+{
+    static std::string g_ServerHost = "127.0.0.1";
+    static std::string g_ServerPort = "3389";
+
+    static SERVICE_STATUS_HANDLE volatile g_ServiceStatusHandle = nullptr;
+    static bool volatile g_ServiceIsRunning = true;
+}
+
+SOCKET SynthRdpConnectToServer()
+{
+    SOCKET Result = INVALID_SOCKET;
+
+    int LastError = 0;
+
+    addrinfo AddressHints = { 0 };
+    AddressHints.ai_family = AF_INET;
+    AddressHints.ai_socktype = SOCK_STREAM;
+    AddressHints.ai_protocol = IPPROTO_TCP;
+    addrinfo* AddressInfo = nullptr;
+    LastError = ::getaddrinfo(
+        g_ServerHost.c_str(),
+        g_ServerPort.c_str(),
+        &AddressHints,
+        &AddressInfo);
+    if (0 == LastError)
+    {
+        for (addrinfo* Current = AddressInfo;
+            nullptr != Current;
+            Current = Current->ai_next)
+        {
+            SOCKET Socket = ::WSASocketW(
+                Current->ai_family,
+                Current->ai_socktype,
+                Current->ai_protocol,
+                nullptr,
+                0,
+                WSA_FLAG_OVERLAPPED);
+            if (INVALID_SOCKET == Socket)
+            {
+                LastError = ::WSAGetLastError();
+                break;
+            }
+
+            if (SOCKET_ERROR != ::WSAConnect(
+                Socket,
+                Current->ai_addr,
+                static_cast<int>(Current->ai_addrlen),
+                nullptr,
+                nullptr,
+                nullptr,
+                nullptr))
+            {
+                Result = Socket;
+                break;
+            }
+
+            LastError = ::WSAGetLastError();
+            ::closesocket(Socket);
+        }
+
+        ::freeaddrinfo(AddressInfo);
+    }
+
+    if (INVALID_SOCKET == Result && 0 != LastError)
+    {
+        ::WSASetLastError(LastError);
+    }
+
+    return Result;
+}
+
+struct SynthRdpServiceConnectionContext
+{
+    std::uint8_t SendBuffer[16384];
+    std::uint8_t RecvBuffer[16384];
+};
+
+void SynthRdpRedirectionWorker(
+    _In_ HANDLE PipeHandle)
+{
+    SOCKET Socket = INVALID_SOCKET;
+    SynthRdpServiceConnectionContext* Context = nullptr;
+
+    do
+    {
+        Socket = ::SynthRdpConnectToServer();
+        if (Socket == INVALID_SOCKET)
+        {
+            std::printf(
+                "[Error] SynthRdpConnectToServer failed (%d).\n",
+                ::WSAGetLastError());
+            break;
+        }
+
+        Context = reinterpret_cast<SynthRdpServiceConnectionContext*>(
+            ::MileAllocateMemory(sizeof(SynthRdpServiceConnectionContext)));
+        if (!Context)
+        {
+            std::printf(
+                "[Error] MileAllocateMemory failed.\n");
+            break;
+        }
+
+        // X.224 Connection Request PDU (Patched)
+        {
+            DWORD NumberOfBytesRead = 0;
+            if (!::MileReadFile(
+                PipeHandle,
+                Context->SendBuffer,
+                static_cast<DWORD>(sizeof(Context->SendBuffer)),
+                &NumberOfBytesRead))
+            {
+                std::printf(
+                    "[Error] MileReadFile failed (%d).\n",
+                    ::GetLastError());
+                break;
+            }
+
+            // Set requestedProtocols to PROTOCOL_RDP (0x00000000).
+            Context->SendBuffer[15] = 0x00;
+
+            std::wprintf(
+                L"[Info] MileSocketSend: %d Bytes.\n",
+                NumberOfBytesRead);
+
+            DWORD NumberOfBytesSent = 0;
+            DWORD Flags = 0;
+            if (!::MileSocketSend(
+                Socket,
+                Context->SendBuffer,
+                NumberOfBytesRead,
+                &NumberOfBytesSent,
+                Flags))
+            {
+                std::printf(
+                    "[Error] MileSocketSend failed (%d).\n",
+                    ::WSAGetLastError());
+                break;
+            }
+        }
+
+        bool volatile ShouldRunning = true;
+
+        HANDLE Vmbus2TcpThread = Mile::CreateThread([&]()
+        {
+            for (; ShouldRunning && g_ServiceIsRunning;)
+            {
+                DWORD NumberOfBytesRead = 0;
+                if (!::MileReadFile(
+                    PipeHandle,
+                    Context->SendBuffer,
+                    static_cast<DWORD>(sizeof(Context->SendBuffer)),
+                    &NumberOfBytesRead))
+                {
+                    std::printf(
+                        "[Error] MileReadFile failed (%d).\n",
+                        ::GetLastError());
+                    break;
+                }
+
+                std::printf(
+                    "[Info] MileSocketSend: %d Bytes.\n",
+                    NumberOfBytesRead);
+
+                DWORD NumberOfBytesSent = 0;
+                DWORD Flags = 0;
+                if (!::MileSocketSend(
+                    Socket,
+                    Context->SendBuffer,
+                    NumberOfBytesRead,
+                    &NumberOfBytesSent,
+                    Flags))
+                {
+                    std::printf(
+                        "[Error] MileSocketSend failed (%d).\n",
+                        ::WSAGetLastError());
+                    break;
+                }
+            }
+        });
+
+        HANDLE Tcp2VmbusThread = Mile::CreateThread([&]()
+        {
+            for (; ShouldRunning && g_ServiceIsRunning;)
+            {
+                DWORD NumberOfBytesRecvd = 0;
+                DWORD Flags = MSG_PARTIAL;
+                if (!::MileSocketRecv(
+                    Socket,
+                    Context->RecvBuffer,
+                    static_cast<DWORD>(sizeof(Context->RecvBuffer)),
+                    &NumberOfBytesRecvd,
+                    &Flags))
+                {
+                    std::printf(
+                        "[Error] MileSocketRecv failed (%d).\n",
+                        ::WSAGetLastError());
+                    break;
+                }
+
+                std::printf(
+                    "[Info] MileWriteFile: %d Bytes.\n",
+                    NumberOfBytesRecvd);
+
+                DWORD NumberOfBytesWritten = 0;
+                if (!::MileWriteFile(
+                    PipeHandle,
+                    Context->RecvBuffer,
+                    NumberOfBytesRecvd,
+                    &NumberOfBytesWritten))
+                {
+                    std::printf(
+                        "[Error] MileWriteFile failed (%d).\n",
+                        ::GetLastError());
+                    break;
+                }
+            }
+        });
+
+        for (;;)
+        {
+            if (WAIT_TIMEOUT != ::WaitForSingleObject(
+                Vmbus2TcpThread,
+                100))
+            {
+                ShouldRunning = false;
+                break;
+            }
+
+            if (WAIT_TIMEOUT != ::WaitForSingleObject(
+                Tcp2VmbusThread,
+                100))
+            {
+                ShouldRunning = false;
+                break;
+            }
+        }
+
+        if (Vmbus2TcpThread)
+        {
+            ::CloseHandle(Vmbus2TcpThread);
+            Vmbus2TcpThread = nullptr;
+        }
+
+        if (Tcp2VmbusThread)
+        {
+            ::CloseHandle(Tcp2VmbusThread);
+            Tcp2VmbusThread = nullptr;
+        }
+
+    } while (false);
+
+    if (Context)
+    {
+        ::MileFreeMemory(Context);
+    }
+
+    if (Socket != INVALID_SOCKET)
+    {
+        ::closesocket(Socket);
+    }
+}
+
 DWORD SynthRdpMain()
 {
-    return ERROR_SUCCESS;
+    WSADATA WSAData = { 0 };
+    {
+        int WSAError = ::WSAStartup(MAKEWORD(2, 2), &WSAData);
+        if (NO_ERROR != WSAError)
+        {
+            std::printf(
+                "[Error] WSAStartup failed (%d).\n",
+                WSAError);
+            return WSAError;
+        }
+    }
+
+    DWORD Error = ERROR_SUCCESS;
+
+    HANDLE ControlChannelHandle = INVALID_HANDLE_VALUE;
+
+    do
+    {
+        ControlChannelHandle = ::VmbusPipeClientTryOpenChannel(
+            &SYNTHRDP_CONTROL_CLASS_ID,
+            &SYNTHRDP_CONTROL_INSTANCE_ID,
+            INFINITE,
+            FILE_FLAG_OVERLAPPED);
+        if (INVALID_HANDLE_VALUE == ControlChannelHandle)
+        {
+            Error = ::GetLastError();
+            std::printf(
+                "[Error] VmbusPipeClientTryOpenChannel failed (%d).\n",
+                Error);
+            break;
+        }
+
+        SYNTHRDP_VERSION_REQUEST_MESSAGE Request;
+        std::memset(
+            &Request,
+            0,
+            sizeof(SYNTHRDP_VERSION_REQUEST_MESSAGE));
+        Request.Header.Type = SynthrdpVersionRequest;
+        Request.Header.Size = 0;
+        Request.Version.AsDWORD = SYNTHRDP_VERSION_WINBLUE;
+        Request.Reserved = 0;
+        DWORD NumberOfBytesWritten = 0;
+        if (!::MileWriteFile(
+            ControlChannelHandle,
+            &Request,
+            sizeof(Request),
+            &NumberOfBytesWritten))
+        {
+            Error = ::GetLastError();
+            std::printf(
+                "[Error] MileWriteFile failed (%d).\n",
+                Error);
+            break;
+        }
+
+        if (sizeof(SYNTHRDP_VERSION_REQUEST_MESSAGE) != NumberOfBytesWritten)
+        {
+            Error = ERROR_INVALID_DATA;
+            std::printf(
+                "[Error] SYNTHRDP_VERSION_REQUEST_MESSAGE Invalid.\n");
+            break;
+        }
+
+        SYNTHRDP_VERSION_RESPONSE_MESSAGE Response;
+        std::memset(
+            &Response,
+            0,
+            sizeof(SYNTHRDP_VERSION_RESPONSE_MESSAGE));
+        DWORD NumberOfBytesRead = 0;
+        if (!::MileReadFile(
+            ControlChannelHandle,
+            &Response,
+            sizeof(Response),
+            &NumberOfBytesRead))
+        {
+            Error = ::GetLastError();
+            std::printf(
+                "[Error] MileReadFile failed (%d).\n",
+                Error);
+            break;
+        }
+
+        if (sizeof(SYNTHRDP_VERSION_RESPONSE_MESSAGE) != NumberOfBytesRead ||
+            SYNTHRDP_TRUE_WITH_VERSION_EXCHANGE != Response.IsAccepted)
+        {
+            Error = ERROR_INVALID_DATA;
+            std::printf(
+                "[Error] SYNTHRDP_VERSION_RESPONSE_MESSAGE Invalid.\n");
+            break;
+        }
+
+        GUID Instances[] =
+        {
+            SYNTHRDP_DATA_INSTANCE_ID_1,
+            SYNTHRDP_DATA_INSTANCE_ID_2,
+            SYNTHRDP_DATA_INSTANCE_ID_3,
+            SYNTHRDP_DATA_INSTANCE_ID_4,
+            SYNTHRDP_DATA_INSTANCE_ID_5
+        };
+        for (size_t i = 0; g_ServiceIsRunning; ++i)
+        {
+            HANDLE DataChannelHandle = ::VmbusPipeClientTryOpenChannel(
+                &SYNTHRDP_DATA_CLASS_ID,
+                &Instances[i % (sizeof(Instances) / sizeof(*Instances))],
+                50,
+                FILE_FLAG_OVERLAPPED);
+            if (INVALID_HANDLE_VALUE == DataChannelHandle)
+            {
+                continue;
+            }
+
+            ::SynthRdpRedirectionWorker(DataChannelHandle);
+
+            ::CloseHandle(DataChannelHandle);
+        }
+
+    } while (false);
+
+    if (INVALID_HANDLE_VALUE != ControlChannelHandle)
+    {
+        ::CloseHandle(ControlChannelHandle);
+    }
+
+    ::WSACleanup();
+
+    return Error;
 }
 
 namespace
@@ -33,9 +453,6 @@ namespace
         L"SynthRdp";
     static std::wstring g_DisplayName =
         L"Hyper-V Enhanced Session Proxy Service";
-
-    static SERVICE_STATUS_HANDLE volatile g_ServiceStatusHandle = nullptr;
-    static bool volatile g_ServiceIsRunning = true;
 }
 
 void WINAPI SynthRdpServiceHandler(
@@ -273,6 +690,12 @@ int main()
 
     if (!NeedParse)
     {
+        std::printf(
+            "[Info] SynthRdp will run as a console application instead of "
+            "service.\r\n"
+            "[Info] Use \"SynthRdp Help\" for more commands.\r\n"
+            "\r\n");
+
         return ::SynthRdpMain();
     }
 
