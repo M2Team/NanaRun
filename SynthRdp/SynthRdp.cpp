@@ -1,7 +1,7 @@
 ﻿/*
  * PROJECT:   NanaRun
  * FILE:      SynthRdp.cpp
- * PURPOSE:   Implementation for Hyper-V VMBus Enhanced Session Service
+ * PURPOSE:   Implementation for Hyper-V Enhanced Session Proxy Service
  *
  * LICENSE:   The MIT License
  *

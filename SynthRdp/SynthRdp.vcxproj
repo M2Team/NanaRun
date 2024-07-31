@@ -8,7 +8,7 @@
     <MileProjectEnableVCLTLSupport>true</MileProjectEnableVCLTLSupport>
     <MileProjectUseProjectProperties>true</MileProjectUseProjectProperties>
     <MileProjectCompanyName>M2-Team</MileProjectCompanyName>
-    <MileProjectFileDescription>Hyper-V VMBus Enhanced Session Service</MileProjectFileDescription>
+    <MileProjectFileDescription>Hyper-V Enhanced Session Proxy Service</MileProjectFileDescription>
     <MileProjectInternalName>SynthRdp</MileProjectInternalName>
     <MileProjectLegalCopyright>© M2-Team and Contributors. All rights reserved.</MileProjectLegalCopyright>
     <MileProjectOriginalFilename>SynthRdp.exe</MileProjectOriginalFilename>
@@ -16,6 +16,7 @@
     <MileProjectVersion>1.0.$([System.DateTime]::Today.Subtract($([System.DateTime]::Parse('2024-05-01'))).TotalDays).0</MileProjectVersion>
     <MileProjectVersionTag>Preview 2</MileProjectVersionTag>
     <MileHyperVEnableWindowsPlatformSupport>true</MileHyperVEnableWindowsPlatformSupport>
+    <WindowsTargetPlatformMinVersion>5.1.2600.0</WindowsTargetPlatformMinVersion>
   </PropertyGroup>
   <Import Project="..\Mile.Project.Windows\Mile.Project.Platform.x86.props" />
   <Import Project="..\Mile.Project.Windows\Mile.Project.Platform.x64.props" />
