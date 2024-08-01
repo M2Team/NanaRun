@@ -675,6 +675,123 @@ int SynthRdpStopService()
     return Error;
 }
 
+int SynthRdpListConfigurations()
+{
+    DWORD Error = ERROR_SUCCESS;
+
+    DWORD Data = 0;
+    DWORD Length = 0;
+
+    bool DisableRemoteDesktop = false;
+    {
+        Data = 0;
+        Length = sizeof(DWORD);
+        Error = ::RegGetValueW(
+            HKEY_LOCAL_MACHINE,
+            L"SYSTEM\\CurrentControlSet\\Control\\Terminal Server",
+            L"fDenyTSConnections",
+            RRF_RT_REG_DWORD | RRF_SUBKEY_WOW6464KEY,
+            nullptr,
+            &Data,
+            &Length);
+        if (ERROR_SUCCESS == Error)
+        {
+            DisableRemoteDesktop = Data;
+        }
+    }
+
+    bool DisableBlankPassword = false;
+    {
+        Data = 0;
+        Length = sizeof(DWORD);
+        Error = ::RegGetValueW(
+            HKEY_LOCAL_MACHINE,
+            L"SYSTEM\\CurrentControlSet\\Control\\Lsa",
+            L"LimitBlankPasswordUse",
+            RRF_RT_REG_DWORD | RRF_SUBKEY_WOW6464KEY,
+            nullptr,
+            &Data,
+            &Length);
+        if (ERROR_SUCCESS == Error)
+        {
+            DisableBlankPassword = Data;
+        }
+    }
+
+    bool OverrideSystemImplementation = false;
+    {
+        Data = 0;
+        Length = sizeof(DWORD);
+        Error = ::RegGetValueW(
+            HKEY_LOCAL_MACHINE,
+            L"SOFTWARE\\Microsoft\\Virtual Machine\\Guest",
+            L"DisableEnhancedSessionConsoleConnection",
+            RRF_RT_REG_DWORD | RRF_SUBKEY_WOW6464KEY,
+            nullptr,
+            &Data,
+            &Length);
+        if (ERROR_SUCCESS == Error)
+        {
+            OverrideSystemImplementation = Data;
+        }
+    }
+
+    std::string ServerHost = "127.0.0.1";
+    {
+        std::wstring Buffer(32767, L'\0');
+
+        Length = static_cast<DWORD>(Buffer.size());
+        Error = ::RegGetValueW(
+            HKEY_LOCAL_MACHINE,
+            L"SYSTEM\\CurrentControlSet\\Services\\SynthRdp\\Configurations",
+            L"ServerHost",
+            RRF_RT_REG_SZ | RRF_SUBKEY_WOW6464KEY,
+            nullptr,
+            const_cast<wchar_t*>(Buffer.c_str()),
+            &Length);
+        if (ERROR_SUCCESS == Error)
+        {
+            Buffer.resize(std::wcslen(Buffer.c_str()));
+            ServerHost = Mile::ToString(CP_UTF8, Buffer);
+        }
+    }
+
+    std::uint16_t ServerPort = 3389;
+    {
+        Data = 0;
+        Length = sizeof(DWORD);
+        Error = ::RegGetValueW(
+            HKEY_LOCAL_MACHINE,
+            L"SYSTEM\\CurrentControlSet\\Services\\SynthRdp\\Configurations",
+            L"ServerPort",
+            RRF_RT_REG_DWORD | RRF_SUBKEY_WOW6464KEY,
+            nullptr,
+            &Data,
+            &Length);
+        if (ERROR_SUCCESS == Error)
+        {
+            ServerPort = static_cast<std::uint16_t>(Data);
+        }
+    }
+
+    std::printf(
+        "Configurations:\r\n"
+        "\r\n"
+        "DisableRemoteDesktop: %s\r\n"
+        "DisableBlankPassword: %s\r\n"
+        "OverrideSystemImplementation: %s\r\n"
+        "ServerHost: %s\r\n"
+        "ServerPort: %hu\r\n"
+        "\r\n",
+        DisableRemoteDesktop ? "True" : "False",
+        DisableBlankPassword ? "True" : "False",
+        OverrideSystemImplementation ? "True" : "False",
+        ServerHost.c_str(),
+        ServerPort);
+
+    return Error;
+}
+
 int main()
 {
     ::std::printf(
@@ -740,6 +857,17 @@ int main()
     {
         Result = ::SynthRdpStopService();
     }
+    else if (0 == _stricmp(Arguments[1].c_str(), "Config"))
+    {
+        ParseError = !(Arguments.size() > 2);
+        if (!ParseError)
+        {
+            if (0 == _stricmp(Arguments[2].c_str(), "List"))
+            {
+                Result = ::SynthRdpListConfigurations();
+            }
+        }
+    }
     else
     {
         ParseError = true;
@@ -765,6 +893,8 @@ int main()
             "  Uninstall - Uninstall SynthRdp service.\r\n"
             "  Start - Start SynthRdp service.\r\n"
             "  Stop - Stop SynthRdp service.\r\n"
+            "\r\n"
+            "  Config List - List all configurations related to SynthRdp.\r\n"
             "\r\n"
             "Notes:\r\n"
             "  - All command options are case-insensitive.\r\n"
