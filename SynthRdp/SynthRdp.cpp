@@ -1070,11 +1070,16 @@ int SynthRdpUpdateConfiguration(
 
     if (ERROR_SUCCESS == Error)
     {
-        std::printf("[Success] SynthRdpUpdateConfiguration\n");
+        std::printf(
+            "[Success] SynthRdpUpdateConfiguration %s\n",
+            Key.c_str());
     }
     else
     {
-        std::printf("[Error] SynthRdpUpdateConfiguration (%d)\n", Error);
+        std::printf(
+            "[Error] SynthRdpUpdateConfiguration %s (%d)\n",
+            Key.c_str(),
+            Error);
     }
 
     return Error;
