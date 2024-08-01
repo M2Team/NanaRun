@@ -45,9 +45,6 @@ EXTERN_C HANDLE WINAPI VmbusPipeClientTryOpenChannel(
 
 namespace
 {
-    static std::string g_ServerHost = "127.0.0.1";
-    static std::string g_ServerPort = "3389";
-
     static SERVICE_STATUS_HANDLE volatile g_ServiceStatusHandle = nullptr;
     static bool volatile g_ServiceIsRunning = true;
 }
@@ -55,6 +52,43 @@ namespace
 SOCKET SynthRdpConnectToServer()
 {
     SOCKET Result = INVALID_SOCKET;
+
+    std::string ServerHost = "127.0.0.1";
+    {
+        std::wstring Buffer(32767, L'\0');
+        DWORD Length = static_cast<DWORD>(Buffer.size());
+        if (ERROR_SUCCESS == ::RegGetValueW(
+            HKEY_LOCAL_MACHINE,
+            L"SYSTEM\\CurrentControlSet\\Services\\"
+            L"SynthRdp\\Configurations",
+            L"ServerHost",
+            RRF_RT_REG_SZ | RRF_SUBKEY_WOW6464KEY,
+            nullptr,
+            const_cast<wchar_t*>(Buffer.c_str()),
+            &Length))
+        {
+            Buffer.resize(std::wcslen(Buffer.c_str()));
+            ServerHost = Mile::ToString(CP_UTF8, Buffer);
+        }
+    }
+
+    std::string ServerPort = "3389";
+    {
+        DWORD Data = 0;
+        DWORD Length = sizeof(DWORD);
+        if (ERROR_SUCCESS == ::RegGetValueW(
+            HKEY_LOCAL_MACHINE,
+            L"SYSTEM\\CurrentControlSet\\Services\\"
+            L"SynthRdp\\Configurations",
+            L"ServerPort",
+            RRF_RT_REG_DWORD | RRF_SUBKEY_WOW6464KEY,
+            nullptr,
+            &Data,
+            &Length))
+        {
+            ServerPort = Mile::FormatString("%hu", Data);
+        }
+    }
 
     int LastError = 0;
 
@@ -64,8 +98,8 @@ SOCKET SynthRdpConnectToServer()
     AddressHints.ai_protocol = IPPROTO_TCP;
     addrinfo* AddressInfo = nullptr;
     LastError = ::getaddrinfo(
-        g_ServerHost.c_str(),
-        g_ServerPort.c_str(),
+        ServerHost.c_str(),
+        ServerPort.c_str(),
         &AddressHints,
         &AddressInfo);
     if (0 == LastError)
