@@ -47,6 +47,7 @@ namespace
 {
     static SERVICE_STATUS_HANDLE volatile g_ServiceStatusHandle = nullptr;
     static bool volatile g_ServiceIsRunning = true;
+    static bool volatile g_InteractiveMode = false;
 }
 
 SOCKET SynthRdpConnectToServer()
@@ -166,9 +167,12 @@ void SynthRdpRedirectionWorker(
         Socket = ::SynthRdpConnectToServer();
         if (Socket == INVALID_SOCKET)
         {
-            std::printf(
-                "[Error] SynthRdpConnectToServer failed (%d).\n",
-                ::WSAGetLastError());
+            if (g_InteractiveMode)
+            {
+                std::printf(
+                    "[Error] SynthRdpConnectToServer failed (%d).\n",
+                    ::WSAGetLastError());
+            }
             break;
         }
 
@@ -176,8 +180,11 @@ void SynthRdpRedirectionWorker(
             ::MileAllocateMemory(sizeof(SynthRdpServiceConnectionContext)));
         if (!Context)
         {
-            std::printf(
-                "[Error] MileAllocateMemory failed.\n");
+            if (g_InteractiveMode)
+            {
+                std::printf(
+                    "[Error] MileAllocateMemory failed.\n");
+            }
             break;
         }
 
@@ -190,18 +197,24 @@ void SynthRdpRedirectionWorker(
                 static_cast<DWORD>(sizeof(Context->SendBuffer)),
                 &NumberOfBytesRead))
             {
-                std::printf(
-                    "[Error] MileReadFile failed (%d).\n",
-                    ::GetLastError());
+                if (g_InteractiveMode)
+                {
+                    std::printf(
+                        "[Error] MileReadFile failed (%d).\n",
+                        ::GetLastError());
+                }
                 break;
             }
 
             // Set requestedProtocols to PROTOCOL_RDP (0x00000000).
             Context->SendBuffer[15] = 0x00;
 
-            std::wprintf(
-                L"[Info] MileSocketSend: %d Bytes.\n",
-                NumberOfBytesRead);
+            if (g_InteractiveMode)
+            {
+                std::wprintf(
+                    L"[Info] MileSocketSend: %d Bytes.\n",
+                    NumberOfBytesRead);
+            }
 
             DWORD NumberOfBytesSent = 0;
             DWORD Flags = 0;
@@ -212,9 +225,12 @@ void SynthRdpRedirectionWorker(
                 &NumberOfBytesSent,
                 Flags))
             {
-                std::printf(
-                    "[Error] MileSocketSend failed (%d).\n",
-                    ::WSAGetLastError());
+                if (g_InteractiveMode)
+                {
+                    std::printf(
+                        "[Error] MileSocketSend failed (%d).\n",
+                        ::WSAGetLastError());
+                }
                 break;
             }
         }
@@ -232,15 +248,21 @@ void SynthRdpRedirectionWorker(
                     static_cast<DWORD>(sizeof(Context->SendBuffer)),
                     &NumberOfBytesRead))
                 {
-                    std::printf(
-                        "[Error] MileReadFile failed (%d).\n",
-                        ::GetLastError());
+                    if (g_InteractiveMode)
+                    {
+                        std::printf(
+                            "[Error] MileReadFile failed (%d).\n",
+                            ::GetLastError());
+                    }
                     break;
                 }
 
-                std::printf(
-                    "[Info] MileSocketSend: %d Bytes.\n",
-                    NumberOfBytesRead);
+                if (g_InteractiveMode)
+                {
+                    std::printf(
+                        "[Info] MileSocketSend: %d Bytes.\n",
+                        NumberOfBytesRead);
+                }
 
                 DWORD NumberOfBytesSent = 0;
                 DWORD Flags = 0;
@@ -251,9 +273,12 @@ void SynthRdpRedirectionWorker(
                     &NumberOfBytesSent,
                     Flags))
                 {
-                    std::printf(
-                        "[Error] MileSocketSend failed (%d).\n",
-                        ::WSAGetLastError());
+                    if (g_InteractiveMode)
+                    {
+                        std::printf(
+                            "[Error] MileSocketSend failed (%d).\n",
+                            ::WSAGetLastError());
+                    }
                     break;
                 }
             }
@@ -272,15 +297,21 @@ void SynthRdpRedirectionWorker(
                     &NumberOfBytesRecvd,
                     &Flags))
                 {
-                    std::printf(
-                        "[Error] MileSocketRecv failed (%d).\n",
-                        ::WSAGetLastError());
+                    if (g_InteractiveMode)
+                    {
+                        std::printf(
+                            "[Error] MileSocketRecv failed (%d).\n",
+                            ::WSAGetLastError());
+                    }
                     break;
                 }
 
-                std::printf(
-                    "[Info] MileWriteFile: %d Bytes.\n",
-                    NumberOfBytesRecvd);
+                if (g_InteractiveMode)
+                {
+                    std::printf(
+                        "[Info] MileWriteFile: %d Bytes.\n",
+                        NumberOfBytesRecvd);
+                }
 
                 DWORD NumberOfBytesWritten = 0;
                 if (!::MileWriteFile(
@@ -289,9 +320,12 @@ void SynthRdpRedirectionWorker(
                     NumberOfBytesRecvd,
                     &NumberOfBytesWritten))
                 {
-                    std::printf(
-                        "[Error] MileWriteFile failed (%d).\n",
-                        ::GetLastError());
+                    if (g_InteractiveMode)
+                    {
+                        std::printf(
+                            "[Error] MileWriteFile failed (%d).\n",
+                            ::GetLastError());
+                    }
                     break;
                 }
             }
@@ -348,9 +382,12 @@ DWORD SynthRdpMain()
         int WSAError = ::WSAStartup(MAKEWORD(2, 2), &WSAData);
         if (NO_ERROR != WSAError)
         {
-            std::printf(
-                "[Error] WSAStartup failed (%d).\n",
-                WSAError);
+            if (g_InteractiveMode)
+            {
+                std::printf(
+                    "[Error] WSAStartup failed (%d).\n",
+                    WSAError);
+            }
             return WSAError;
         }
     }
@@ -369,9 +406,12 @@ DWORD SynthRdpMain()
         if (INVALID_HANDLE_VALUE == ControlChannelHandle)
         {
             Error = ::GetLastError();
-            std::printf(
-                "[Error] VmbusPipeClientTryOpenChannel failed (%d).\n",
-                Error);
+            if (g_InteractiveMode)
+            {
+                std::printf(
+                    "[Error] VmbusPipeClientTryOpenChannel failed (%d).\n",
+                    Error);
+            }
             break;
         }
 
@@ -392,17 +432,23 @@ DWORD SynthRdpMain()
             &NumberOfBytesWritten))
         {
             Error = ::GetLastError();
-            std::printf(
-                "[Error] MileWriteFile failed (%d).\n",
-                Error);
+            if (g_InteractiveMode)
+            {
+                std::printf(
+                    "[Error] MileWriteFile failed (%d).\n",
+                    Error);
+            }
             break;
         }
 
         if (sizeof(SYNTHRDP_VERSION_REQUEST_MESSAGE) != NumberOfBytesWritten)
         {
             Error = ERROR_INVALID_DATA;
-            std::printf(
-                "[Error] SYNTHRDP_VERSION_REQUEST_MESSAGE Invalid.\n");
+            if (g_InteractiveMode)
+            {
+                std::printf(
+                    "[Error] SYNTHRDP_VERSION_REQUEST_MESSAGE Invalid.\n");
+            }
             break;
         }
 
@@ -419,9 +465,12 @@ DWORD SynthRdpMain()
             &NumberOfBytesRead))
         {
             Error = ::GetLastError();
-            std::printf(
-                "[Error] MileReadFile failed (%d).\n",
-                Error);
+            if (g_InteractiveMode)
+            {
+                std::printf(
+                    "[Error] MileReadFile failed (%d).\n",
+                    Error);
+            }
             break;
         }
 
@@ -429,8 +478,11 @@ DWORD SynthRdpMain()
             SYNTHRDP_TRUE_WITH_VERSION_EXCHANGE != Response.IsAccepted)
         {
             Error = ERROR_INVALID_DATA;
-            std::printf(
-                "[Error] SYNTHRDP_VERSION_RESPONSE_MESSAGE Invalid.\n");
+            if (g_InteractiveMode)
+            {
+                std::printf(
+                    "[Error] SYNTHRDP_VERSION_RESPONSE_MESSAGE Invalid.\n");
+            }
             break;
         }
 
@@ -1043,6 +1095,8 @@ int main()
 
     if (!NeedParse)
     {
+        g_InteractiveMode = true;
+
         std::printf(
             "[Info] SynthRdp will run as a console application instead of "
             "service.\n"
