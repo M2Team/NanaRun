@@ -14,7 +14,7 @@
     <MileProjectOriginalFilename>MinSudo.exe</MileProjectOriginalFilename>
     <MileProjectProductName>NanaRun</MileProjectProductName>
     <MileProjectVersion>1.0.$([System.DateTime]::Today.Subtract($([System.DateTime]::Parse('2024-05-01'))).TotalDays).0</MileProjectVersion>
-    <MileProjectVersionTag>Preview 2</MileProjectVersionTag>
+    <MileProjectVersionTag>Preview 3</MileProjectVersionTag>
   </PropertyGroup>
   <Import Project="..\Mile.Project.Windows\Mile.Project.Platform.x86.props" />
   <Import Project="..\Mile.Project.Windows\Mile.Project.Platform.x64.props" />
