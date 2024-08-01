@@ -700,6 +700,25 @@ int SynthRdpListConfigurations()
         }
     }
 
+    bool EnableUserAuthentication = true;
+    {
+        Data = 0;
+        Length = sizeof(DWORD);
+        Error = ::RegGetValueW(
+            HKEY_LOCAL_MACHINE,
+            L"SYSTEM\\CurrentControlSet\\Control\\Terminal Server\\"
+            L"WinStations\\RDP-Tcp",
+            L"UserAuthentication",
+            RRF_RT_REG_DWORD | RRF_SUBKEY_WOW6464KEY,
+            nullptr,
+            &Data,
+            &Length);
+        if (ERROR_SUCCESS == Error)
+        {
+            EnableUserAuthentication = Data;
+        }
+    }
+
     bool DisableBlankPassword = false;
     {
         Data = 0;
@@ -780,13 +799,14 @@ int SynthRdpListConfigurations()
         "Configurations:\n"
         "\n"
         "DisableRemoteDesktop: %s\n"
-        "DisableBlankPassword: %s\r\n"
+        "EnableUserAuthentication: %s\n"
         "DisableBlankPassword: %s\n"
         "OverrideSystemImplementation: %s\n"
         "ServerHost: %s\n"
         "ServerPort: %hu\n"
         "\n",
         DisableRemoteDesktop ? "True" : "False",
+        EnableUserAuthentication ? "True" : "False",
         DisableBlankPassword ? "True" : "False",
         OverrideSystemImplementation ? "True" : "False",
         ServerHost.c_str(),
