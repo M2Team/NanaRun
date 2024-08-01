@@ -2,6 +2,14 @@
 
 For stable versions, please read [NanaRun Release Notes](ReleaseNotes.md).
 
+**NanaRun 1.0 Preview 3 (1.0.92.0)**
+
+- Introduce the SynthRdp tool.
+- Add short form command line options support for MinSudo. (Suggested by
+  he3als.)
+- Update icon assets. (Designed by Shomnipotence.)
+- Adjust several implementations.
+
 **NanaRun 1.0 Preview 2 (1.0.18.0)**
 
 - Remove standard handle settings because child process will inherit the 
