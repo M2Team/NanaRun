@@ -743,7 +743,8 @@ int SynthRdpListConfigurations()
         Length = static_cast<DWORD>(Buffer.size());
         Error = ::RegGetValueW(
             HKEY_LOCAL_MACHINE,
-            L"SYSTEM\\CurrentControlSet\\Services\\SynthRdp\\Configurations",
+            L"SYSTEM\\CurrentControlSet\\Services\\"
+            L"SynthRdp\\Configurations",
             L"ServerHost",
             RRF_RT_REG_SZ | RRF_SUBKEY_WOW6464KEY,
             nullptr,
@@ -762,7 +763,8 @@ int SynthRdpListConfigurations()
         Length = sizeof(DWORD);
         Error = ::RegGetValueW(
             HKEY_LOCAL_MACHINE,
-            L"SYSTEM\\CurrentControlSet\\Services\\SynthRdp\\Configurations",
+            L"SYSTEM\\CurrentControlSet\\Services\\"
+            L"SynthRdp\\Configurations",
             L"ServerPort",
             RRF_RT_REG_DWORD | RRF_SUBKEY_WOW6464KEY,
             nullptr,
@@ -822,11 +824,11 @@ int main()
     bool ParseError = false;
     bool ShowHelp = false;
 
-    if (0 == _stricmp(Arguments[1].c_str(), "Help"))
+    if (0 == ::_stricmp(Arguments[1].c_str(), "Help"))
     {
         ShowHelp = true;
     }
-    else if (0 == _stricmp(Arguments[1].c_str(), "Service"))
+    else if (0 == ::_stricmp(Arguments[1].c_str(), "Service"))
     {
         ::FreeConsole();
 
@@ -842,28 +844,28 @@ int main()
             ? ERROR_SUCCESS :
             ::GetLastError();
     }
-    else if (0 == _stricmp(Arguments[1].c_str(), "Install"))
+    else if (0 == ::_stricmp(Arguments[1].c_str(), "Install"))
     {
         Result = ::SynthRdpInstallService();
     }
-    else if (0 == _stricmp(Arguments[1].c_str(), "Uninstall"))
+    else if (0 == ::_stricmp(Arguments[1].c_str(), "Uninstall"))
     {
         Result = ::SynthRdpUninstallService();
     }
-    else if (0 == _stricmp(Arguments[1].c_str(), "Start"))
+    else if (0 == ::_stricmp(Arguments[1].c_str(), "Start"))
     {
         Result = ::SynthRdpStartService();
     }
-    else if (0 == _stricmp(Arguments[1].c_str(), "Stop"))
+    else if (0 == ::_stricmp(Arguments[1].c_str(), "Stop"))
     {
         Result = ::SynthRdpStopService();
     }
-    else if (0 == _stricmp(Arguments[1].c_str(), "Config"))
+    else if (0 == ::_stricmp(Arguments[1].c_str(), "Config"))
     {
         ParseError = !(Arguments.size() > 2);
         if (!ParseError)
         {
-            if (0 == _stricmp(Arguments[2].c_str(), "List"))
+            if (0 == ::_stricmp(Arguments[2].c_str(), "List"))
             {
                 Result = ::SynthRdpListConfigurations();
             }
@@ -908,6 +910,8 @@ int main()
             "  SynthRdp Uninstall\n"
             "  SynthRdp Start\n"
             "  SynthRdp Stop\n"
+            "\n"
+            "  SynthRdp Config List\n"
             "\n");
     }
 
