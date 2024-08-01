@@ -815,6 +815,185 @@ int SynthRdpListConfigurations()
     return Error;
 }
 
+int SynthRdpUpdateConfiguration(
+    std::string const& Key,
+    std::string const& Value)
+{
+    DWORD Error = ERROR_SUCCESS;
+
+    if (0 == ::_stricmp(Key.c_str(), "DisableRemoteDesktop"))
+    {
+        DWORD Data = 1;
+        if (Value.empty() ||
+            0 == ::_stricmp(Value.c_str(), "True"))
+        {
+            // Use the default value.
+        }
+        else if (0 == ::_stricmp(Value.c_str(), "False"))
+        {
+            Data = 0;
+        }
+        else
+        {
+            Error = ERROR_INVALID_PARAMETER;
+        }
+
+        if (ERROR_SUCCESS == Error)
+        {
+            Error = ::RegSetKeyValueW(
+                HKEY_LOCAL_MACHINE,
+                L"SYSTEM\\CurrentControlSet\\Control\\Terminal Server",
+                L"fDenyTSConnections",
+                REG_DWORD,
+                &Data,
+                sizeof(DWORD));
+        }
+    }
+    else if (0 == ::_stricmp(Key.c_str(), "EnableUserAuthentication"))
+    {
+        DWORD Data = 1;
+        if (Value.empty() ||
+            0 == ::_stricmp(Value.c_str(), "True"))
+        {
+            // Use the default value.
+        }
+        else if (0 == ::_stricmp(Value.c_str(), "False"))
+        {
+            Data = 0;
+        }
+        else
+        {
+            Error = ERROR_INVALID_PARAMETER;
+        }
+
+        if (ERROR_SUCCESS == Error)
+        {
+            Error = ::RegSetKeyValueW(
+                HKEY_LOCAL_MACHINE,
+                L"SYSTEM\\CurrentControlSet\\Control\\Terminal Server\\"
+                L"WinStations\\RDP-Tcp",
+                L"UserAuthentication",
+                REG_DWORD,
+                &Data,
+                sizeof(DWORD));
+        }
+    }
+    else if (0 == ::_stricmp(Key.c_str(), "DisableBlankPassword"))
+    {
+        DWORD Data = 1;
+        if (Value.empty() ||
+            0 == ::_stricmp(Value.c_str(), "True"))
+        {
+            // Use the default value.
+        }
+        else if (0 == ::_stricmp(Value.c_str(), "False"))
+        {
+            Data = 0;
+        }
+        else
+        {
+            Error = ERROR_INVALID_PARAMETER;
+        }
+
+        if (ERROR_SUCCESS == Error)
+        {
+            Error = ::RegSetKeyValueW(
+                HKEY_LOCAL_MACHINE,
+                L"SYSTEM\\CurrentControlSet\\Control\\Lsa",
+                L"LimitBlankPasswordUse",
+                REG_DWORD,
+                &Data,
+                sizeof(DWORD));
+        }
+    }
+    else if (0 == ::_stricmp(Key.c_str(), "OverrideSystemImplementation"))
+    {
+        if (Value.empty() ||
+            0 == ::_stricmp(Value.c_str(), "False"))
+        {
+            Error = ::RegDeleteKeyValueW(
+                HKEY_LOCAL_MACHINE,
+                L"SOFTWARE\\Microsoft\\Virtual Machine\\Guest",
+                L"DisableEnhancedSessionConsoleConnection");
+        }
+        else if (0 == ::_stricmp(Value.c_str(), "True"))
+        {
+            DWORD Data = 1;
+            Error = ::RegSetKeyValueW(
+                HKEY_LOCAL_MACHINE,
+                L"SOFTWARE\\Microsoft\\Virtual Machine\\Guest",
+                L"DisableEnhancedSessionConsoleConnection",
+                REG_DWORD,
+                &Data,
+                sizeof(DWORD));
+        }
+        else
+        {
+            Error = ERROR_INVALID_PARAMETER;
+        }
+    }
+    else if (0 == ::_stricmp(Key.c_str(), "ServerHost"))
+    {
+        if (Value.empty())
+        {
+            Error = ::RegDeleteKeyValueW(
+                HKEY_LOCAL_MACHINE,
+                L"SYSTEM\\CurrentControlSet\\Services\\"
+                L"SynthRdp\\Configurations",
+                L"ServerHost");
+        }
+        else
+        {
+            std::wstring ServerHost = Mile::ToWideString(CP_UTF8, Value);
+
+            Error = ::RegSetKeyValueW(
+                HKEY_LOCAL_MACHINE,
+                L"SYSTEM\\CurrentControlSet\\Services\\"
+                L"SynthRdp\\Configurations",
+                L"ServerHost",
+                REG_SZ,
+                ServerHost.c_str(),
+                static_cast<DWORD>((ServerHost.size() + 1) * sizeof(wchar_t)));
+        }
+    }
+    else if (0 == ::_stricmp(Key.c_str(), "ServerPort"))
+    {
+        if (Value.empty())
+        {
+            Error = ::RegDeleteKeyValueW(
+                HKEY_LOCAL_MACHINE,
+                L"SYSTEM\\CurrentControlSet\\Services\\SynthRdp\\Configurations",
+                L"ServerPort");
+        }
+        else
+        {
+            DWORD Data = static_cast<std::uint16_t>(Mile::ToUInt32(Value));
+            Error = ::RegSetKeyValueW(
+                HKEY_LOCAL_MACHINE,
+                L"SYSTEM\\CurrentControlSet\\Services\\SynthRdp\\Configurations",
+                L"ServerPort",
+                REG_DWORD,
+                &Data,
+                sizeof(DWORD));
+        }
+    }
+    else
+    {
+        Error = ERROR_INVALID_PARAMETER;
+    }
+
+    if (ERROR_SUCCESS == Error)
+    {
+        std::printf("[Success] SynthRdpUpdateConfiguration\n");
+    }
+    else
+    {
+        std::printf("[Error] SynthRdpUpdateConfiguration (%d)\n", Error);
+    }
+
+    return Error;
+}
+
 int main()
 {
     ::std::printf(
@@ -889,6 +1068,16 @@ int main()
             {
                 Result = ::SynthRdpListConfigurations();
             }
+            else if (0 == ::_stricmp(Arguments[2].c_str(), "Set"))
+            {
+                ParseError = !(Arguments.size() > 3);
+                if (!ParseError)
+                {
+                    Result = ::SynthRdpUpdateConfiguration(
+                        Arguments[3],
+                        (Arguments.size() > 4) ? Arguments[4] : std::string());
+                }
+            }
         }
     }
     else
@@ -918,6 +1107,48 @@ int main()
             "  Stop - Stop SynthRdp service.\n"
             "\n"
             "  Config List - List all configurations related to SynthRdp.\n"
+            "  Config Set [Key] <Value> - Set the specific configuration\n"
+            "                             with the specific value, or reset\n"
+            "                             the specific configuration if you\n"
+            "                             don't specify the value.\n"
+            "\n"
+            "Configuration Keys:\n"
+            "\n"
+            "  DisableRemoteDesktop <True|False>\n"
+            "    Set False to enable the remote desktop for this virtual\n"
+            "    machine. The default setting is True. Remote Desktop is\n"
+            "    necessary for the Hyper-V Enhanced Session because it is\n"
+            "    actually the RDP connection over the VMBus pipe.\n"
+            "  EnableUserAuthentication <True|False>\n"
+            "    Set False to allow connections without Network Level\n"
+            "    Authentication. The default setting is True. Set this\n"
+            "    configuration option False is necessary for using the\n"
+            "    Hyper-V Enhanced Session via the SynthRdp service.\n"
+            "  DisableBlankPassword <True|False>\n"
+            "    Set False to enable the usage of logging on this virtual\n"
+            "    machine as the account with the blank password via remote\n"
+            "    desktop. The default setting is True. Set this\n"
+            "    configuration option False will make you use the Hyper-V\n"
+            "    Enhanced Session via the SynthRdp service happier, but\n"
+            "    compromise the security.\n"
+            "  OverrideSystemImplementation <True|False>\n"
+            "    Set True to use the Hyper-V Enhanced Session via the\n"
+            "    SynthRdp service on Windows 8.1 / Server 2012 R2 or later\n"
+            "    guests which have the built-in Hyper-V Enhanced Session\n"
+            "    support for this virtual machine. The default setting is\n"
+            "    False. You can set this configuration option True if you\n"
+            "    want to use your current virtual machine as the Hyper-V\n"
+            "    Enhanced Session proxy server. You need to reboot your\n"
+            "    virtual machine for applying this configuration option\n"
+            "    change.\n"
+            "  ServerHost <Host>\n"
+            "    Set the server host for the remote desktop connection you\n"
+            "    want to use in the Hyper-V Enhanced Session. The default\n"
+            "    setting is 127.0.0.1.\n"
+            "  ServerPort <Port>\n"
+            "    Set the server port for the remote desktop connection you\n"
+            "    want to use in the Hyper-V Enhanced Session. The default\n"
+            "    setting is 3389.\n"
             "\n"
             "Notes:\n"
             "  - All command options are case-insensitive.\n"
@@ -932,6 +1163,20 @@ int main()
             "  SynthRdp Stop\n"
             "\n"
             "  SynthRdp Config List\n"
+            "\n"
+            "  SynthRdp Config Set DisableRemoteDesktop False\n"
+            "  SynthRdp Config Set EnableUserAuthentication False\n"
+            "  SynthRdp Config Set DisableBlankPassword False\n"
+            "  SynthRdp Config Set OverrideSystemImplementation False\n"
+            "  SynthRdp Config Set ServerHost 127.0.0.1\n"
+            "  SynthRdp Config Set ServerPort 3389\n"
+            "\n"
+            "  SynthRdp Config Set DisableRemoteDesktop\n"
+            "  SynthRdp Config Set EnableUserAuthentication\n"
+            "  SynthRdp Config Set DisableBlankPassword\n"
+            "  SynthRdp Config Set OverrideSystemImplementation\n"
+            "  SynthRdp Config Set ServerHost\n"
+            "  SynthRdp Config Set ServerPort\n"
             "\n");
     }
 
