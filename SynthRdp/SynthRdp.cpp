@@ -566,11 +566,11 @@ int SynthRdpInstallService()
 
     if (ERROR_SUCCESS == Error)
     {
-        std::printf("[Success] SynthRdpInstallService\r\n");
+        std::printf("[Success] SynthRdpInstallService\n");
     }
     else
     {
-        std::printf("[Error] SynthRdpInstallService (%d)\r\n", Error);
+        std::printf("[Error] SynthRdpInstallService (%d)\n", Error);
     }
 
     return Error;
@@ -621,11 +621,11 @@ int SynthRdpUninstallService()
 
     if (ERROR_SUCCESS == Error)
     {
-        std::printf("[Success] SynthRdpUninstallService\r\n");
+        std::printf("[Success] SynthRdpUninstallService\n");
     }
     else
     {
-        std::printf("[Error] SynthRdpUninstallService (%d)\r\n", Error);
+        std::printf("[Error] SynthRdpUninstallService (%d)\n", Error);
     }
 
     return Error;
@@ -643,11 +643,11 @@ int SynthRdpStartService()
 
     if (ERROR_SUCCESS == Error)
     {
-        std::printf("[Success] SynthRdpStartService\r\n");
+        std::printf("[Success] SynthRdpStartService\n");
     }
     else
     {
-        std::printf("[Error] SynthRdpStartService (%d)\r\n", Error);
+        std::printf("[Error] SynthRdpStartService (%d)\n", Error);
     }
 
     return Error;
@@ -665,11 +665,11 @@ int SynthRdpStopService()
 
     if (ERROR_SUCCESS == Error)
     {
-        std::printf("[Success] SynthRdpStopService\r\n");
+        std::printf("[Success] SynthRdpStopService\n");
     }
     else
     {
-        std::printf("[Error] SynthRdpStopService (%d)\r\n", Error);
+        std::printf("[Error] SynthRdpStopService (%d)\n", Error);
     }
 
     return Error;
@@ -775,14 +775,15 @@ int SynthRdpListConfigurations()
     }
 
     std::printf(
-        "Configurations:\r\n"
-        "\r\n"
-        "DisableRemoteDesktop: %s\r\n"
+        "Configurations:\n"
+        "\n"
+        "DisableRemoteDesktop: %s\n"
         "DisableBlankPassword: %s\r\n"
-        "OverrideSystemImplementation: %s\r\n"
-        "ServerHost: %s\r\n"
-        "ServerPort: %hu\r\n"
-        "\r\n",
+        "DisableBlankPassword: %s\n"
+        "OverrideSystemImplementation: %s\n"
+        "ServerHost: %s\n"
+        "ServerPort: %hu\n"
+        "\n",
         DisableRemoteDesktop ? "True" : "False",
         DisableBlankPassword ? "True" : "False",
         OverrideSystemImplementation ? "True" : "False",
@@ -796,9 +797,9 @@ int main()
 {
     ::std::printf(
         "SynthRdp " MILE_PROJECT_VERSION_UTF8_STRING " (Build "
-        MILE_PROJECT_MACRO_TO_UTF8_STRING(MILE_PROJECT_VERSION_BUILD) ")" "\r\n"
-        "(c) M2-Team and Contributors. All rights reserved.\r\n"
-        "\r\n");
+        MILE_PROJECT_MACRO_TO_UTF8_STRING(MILE_PROJECT_VERSION_BUILD) ")" "\n"
+        "(c) M2-Team and Contributors. All rights reserved.\n"
+        "\n");
 
     std::vector<std::string> Arguments = Mile::SplitCommandLineString(
         Mile::ToString(CP_UTF8, ::GetCommandLineW()));
@@ -809,9 +810,9 @@ int main()
     {
         std::printf(
             "[Info] SynthRdp will run as a console application instead of "
-            "service.\r\n"
-            "[Info] Use \"SynthRdp Help\" for more commands.\r\n"
-            "\r\n");
+            "service.\n"
+            "[Info] Use \"SynthRdp Help\" for more commands.\n"
+            "\n");
 
         return ::SynthRdpMain();
     }
@@ -876,39 +877,38 @@ int main()
     if (ParseError)
     {
         std::printf(
-            "[Error] Unrecognized command.\r\n"
-            "\r\n");
+            "[Error] Unrecognized command.\n"
+            "\n");
     }
 
     if (ParseError || ShowHelp)
     {
         std::printf(
-            "Format: SynthRdp [Command] <Option1> <Option2> ...\r\n"
-            "\r\n"
-            "Commands:\r\n"
-            "\r\n"
-            "  Help - Show this content.\r\n"
-            "\r\n"
-            "  Install - Install SynthRdp service.\r\n"
-            "  Uninstall - Uninstall SynthRdp service.\r\n"
-            "  Start - Start SynthRdp service.\r\n"
-            "  Stop - Stop SynthRdp service.\r\n"
-            "\r\n"
-            "  Config List - List all configurations related to SynthRdp.\r\n"
-            "\r\n"
-            "Notes:\r\n"
-            "  - All command options are case-insensitive.\r\n"
-            "  - SynthRdp will run as a console application instead of service "
-            "if you don't\r\n"
-            "    specify another command.\r\n"
-            "\r\n"
-            "Examples:\r\n"
-            "\r\n"
-            "  SynthRdp Install\r\n"
-            "  SynthRdp Uninstall\r\n"
-            "  SynthRdp Start\r\n"
-            "  SynthRdp Stop\r\n"
-            "\r\n");
+            "Format: SynthRdp [Command] <Option1> <Option2> ...\n"
+            "\n"
+            "Commands:\n"
+            "\n"
+            "  Help - Show this content.\n"
+            "\n"
+            "  Install - Install SynthRdp service.\n"
+            "  Uninstall - Uninstall SynthRdp service.\n"
+            "  Start - Start SynthRdp service.\n"
+            "  Stop - Stop SynthRdp service.\n"
+            "\n"
+            "  Config List - List all configurations related to SynthRdp.\n"
+            "\n"
+            "Notes:\n"
+            "  - All command options are case-insensitive.\n"
+            "  - SynthRdp will run as a console application instead of\n"
+            "    service if you don't specify another command.\n"
+            "\n"
+            "Examples:\n"
+            "\n"
+            "  SynthRdp Install\n"
+            "  SynthRdp Uninstall\n"
+            "  SynthRdp Start\n"
+            "  SynthRdp Stop\n"
+            "\n");
     }
 
     return Result;
