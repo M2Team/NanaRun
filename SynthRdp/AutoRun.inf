@@ -1,0 +1,4 @@
+[autorun]
+open=SynthRdpInstaller.exe
+icon=SynthRdpInstaller.exe
+label=Hyper-V Enhanced Session Proxy Service (SynthRdp)

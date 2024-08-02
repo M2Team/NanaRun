@@ -43,5 +43,9 @@
       <Version>1.0.272</Version>
     </PackageReference>
   </ItemGroup>
+  <ItemGroup>
+    <None Include="AutoRun.inf" />
+    <None Include="SynthRdp.iss" />
+  </ItemGroup>
   <Import Project="..\Mile.Project.Windows\Mile.Project.Cpp.targets" />
 </Project>
