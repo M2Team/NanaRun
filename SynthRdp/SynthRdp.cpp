@@ -119,7 +119,7 @@ SOCKET SynthRdpConnectToServer()
             if (INVALID_SOCKET == Socket)
             {
                 LastError = ::WSAGetLastError();
-                break;
+                continue;
             }
 
             if (SOCKET_ERROR != ::WSAConnect(
