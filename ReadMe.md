@@ -190,7 +190,7 @@ Examples:
   SynthRdp Config Set ServerPort
 ```
 
-## Suggestions
+### Suggestions
 
 - Users should use the SynthRdp to connect to Windows Vista or later guests for
   decent user experiences.
