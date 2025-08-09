@@ -1,11 +1,11 @@
 ﻿```
-* PROJECT:   NanaRun
-* FILE:      Translations.md
-* PURPOSE:   The English translation for MinSudo
+* PROJECT:    NanaRun
+* FILE:       Translations.md
+* PURPOSE:    The English translation for MinSudo
 *
-* LICENSE:   The MIT License
+* LICENSE:    The MIT License
 *
-* DEVELOPER: MouriNaruto (KurikoMouri@outlook.jp)
+* MAINTAINER: MouriNaruto (Kenji.Mouri@outlook.com)
 ```
 
 - InvalidCommandLineError

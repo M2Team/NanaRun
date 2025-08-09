@@ -1,11 +1,11 @@
 ﻿/*
- * PROJECT:   NanaRun
- * FILE:      MinSudo.cpp
- * PURPOSE:   Implementation for MinSudo
+ * PROJECT:    NanaRun
+ * FILE:       MinSudo.cpp
+ * PURPOSE:    Implementation for MinSudo
  *
- * LICENSE:   The MIT License
+ * LICENSE:    The MIT License
  *
- * DEVELOPER: MouriNaruto (KurikoMouri@outlook.jp)
+ * MAINTAINER: MouriNaruto (Kenji.Mouri@outlook.com)
  */
 
 #include <Windows.h>
