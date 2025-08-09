@@ -17,6 +17,7 @@
     <MileProjectVersionTag>Preview 3</MileProjectVersionTag>
     <MileHyperVEnableWindowsPlatformSupport>true</MileHyperVEnableWindowsPlatformSupport>
     <WindowsTargetPlatformMinVersion>5.1.2600.0</WindowsTargetPlatformMinVersion>
+    <MileWindowsHelpersNoCppWinRTHelpers>true</MileWindowsHelpersNoCppWinRTHelpers>
   </PropertyGroup>
   <Import Project="..\Mile.Project.Windows\Mile.Project.Platform.x86.props" />
   <Import Project="..\Mile.Project.Windows\Mile.Project.Platform.x64.props" />
