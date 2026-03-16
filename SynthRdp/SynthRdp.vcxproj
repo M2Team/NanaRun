@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup Label="Globals">
     <ProjectGuid>{ABFD05C2-4673-49EC-A23E-9CA53223EEC2}</ProjectGuid>
@@ -41,7 +41,7 @@
       <Version>1.0.952</Version>
     </PackageReference>
     <PackageReference Include="Mile.HyperV">
-      <Version>1.2.764</Version>
+      <Version>1.2.907</Version>
     </PackageReference>
   </ItemGroup>
   <ItemGroup>
