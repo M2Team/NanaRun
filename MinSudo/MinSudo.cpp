@@ -261,7 +261,8 @@ namespace
             ::WTSFreeMemory(pSessionInfo);
         }
 
-        return static_cast<DWORD>(-1);
+        // We should return session 0 for the case that no active session.
+        return 0;
     }
 
     BOOL CreateSystemToken(
@@ -317,7 +318,7 @@ namespace
                 }
 
                 if ((0 == dwWinLogonPID) &&
-                    (dwSessionID == pProcess->SessionId) &&
+                    (0 == dwSessionID || dwSessionID == pProcess->SessionId) &&
                     (0 == ::_wcsicmp(L"winlogon.exe", pProcess->pProcessName)))
                 {
                     dwWinLogonPID = pProcess->ProcessId;
@@ -557,7 +558,6 @@ namespace
         HANDLE CurrentProcessTokenHandle = INVALID_HANDLE_VALUE;
         HANDLE ImpersonatedCurrentProcessTokenHandle = INVALID_HANDLE_VALUE;
         LUID_AND_ATTRIBUTES RawPrivilege;
-        DWORD SessionID = static_cast<DWORD>(-1);
         HANDLE SystemTokenHandle = INVALID_HANDLE_VALUE;
         HANDLE ImpersonatedSystemTokenHandle = INVALID_HANDLE_VALUE;
         HANDLE TrustedInstallerTokenHandle = INVALID_HANDLE_VALUE;
@@ -658,13 +658,6 @@ namespace
             return Result;
         }
 
-        SessionID = ::GetActiveSessionID();
-        if (SessionID == static_cast<DWORD>(-1))
-        {
-            Error = ERROR_NO_TOKEN;
-            return Result;
-        }
-
         if (!::CreateSystemToken(
             MAXIMUM_ALLOWED,
             &SystemTokenHandle))
@@ -758,14 +751,17 @@ namespace
             return Result;
         }
 
-        if (!::SetTokenInformation(
-            TargetTokenHandle,
-            TokenSessionId,
-            (PVOID)&SessionID,
-            sizeof(DWORD)))
         {
-            Error = ::GetLastError();
-            return Result;
+            DWORD SessionID = ::GetActiveSessionID();
+            if (!::SetTokenInformation(
+                TargetTokenHandle,
+                TokenSessionId,
+                (PVOID)&SessionID,
+                sizeof(DWORD)))
+            {
+                Error = ::GetLastError();
+                return Result;
+            }
         }
 
         if (Privileged)
