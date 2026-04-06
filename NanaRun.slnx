@@ -1,4 +1,4 @@
-﻿<Solution>
+<Solution>
   <Configurations>
     <Platform Name="ARM64" />
     <Platform Name="x64" />
@@ -7,4 +7,5 @@
   <Project Path="MinSudo/MinSudo.vcxproj" Id="99fa5072-6c05-4027-8c8b-ea3ec9bcf9e0" />
   <Project Path="NanaRun/NanaRun.vcxproj" Id="3d1a07c8-17b2-4e5f-aac1-16be522bd4d7" />
   <Project Path="SynthRdp/SynthRdp.vcxproj" Id="abfd05c2-4673-49ec-a23e-9ca53223eec2" />
+  <Project Path="VirtualSmb/VirtualSmb.vcxproj" Id="0a6fbd98-1210-4b36-a031-3e2d57e89de3" />
 </Solution>
