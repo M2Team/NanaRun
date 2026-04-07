@@ -8,12 +8,10 @@
  * MAINTAINER: MouriNaruto (Kenji.Mouri@outlook.com)
  */
 
-#include <Windows.h>
-#include <winioctl.h>
+#include <Mile.Internal.h>
 
-#include <clocale>
 #include <cstdio>
-#include <cwchar>
+#include <cstring>
 
 // Reference: https://github.com/microsoft/hcsshim
 //            /blob/ed5784127999cfd4c08c254626cc964cb20d7948
@@ -336,17 +334,200 @@ typedef struct _LMR_BIND_UNBIND_TRANSPORT_REQUEST
     FILE_ANY_ACCESS)
 #endif // !FSCTL_LMR_BIND_TO_TRANSPORT
 
+template <typename RequestType>
+NTSTATUS LanmanRedirectorStartInstance(
+    _In_ HANDLE Handle)
+{
+    const WCHAR DeviceName[] = L"\\Device\\vmsmb";
+    const std::size_t DeviceNameLength =
+        (sizeof(DeviceName) / sizeof(WCHAR)) - 1;
+
+    const std::size_t RequestBufferSize =
+        FIELD_OFFSET(RequestType, DeviceName) +
+        sizeof(WCHAR) * DeviceNameLength;
+    UINT8 RequestBuffer[RequestBufferSize] = {};
+
+    RequestType* Request = reinterpret_cast<RequestType*>(RequestBuffer);
+    Request->StructureSize =
+        FIELD_OFFSET(LMR_START_INSTANCE_REQUEST, DeviceName);
+    Request->IoTimeout = 30;
+    Request->IoRetryCount = 3;
+    Request->Flags =
+        LMR_INSTANCE_FLAG_REGISTER_FILESYSTEM |
+        LMR_INSTANCE_FLAG_USE_CUSTOM_TRANSPORTS |
+        LMR_INSTANCE_FLAG_ALLOW_GUEST_AUTH |
+        LMR_INSTANCE_FLAG_SUPPORTS_DIRECTMAPPED_IO;
+    Request->Reserved1 = 0;
+    Request->DefaultConnectionProperties.Flags1.Value = 0x1F;
+    Request->DefaultConnectionProperties.SessionTimeoutInterval = 55;
+    Request->DefaultConnectionProperties.CAHandleKeepaliveInterval = 10;
+    Request->DefaultConnectionProperties.NonCAHandleKeepaliveInterval = 30;
+    Request->DefaultConnectionProperties.ActiveIOKeepaliveInterval = 30;
+    Request->InstanceId = 1;
+    Request->DeviceNameLength = DeviceNameLength * sizeof(WCHAR);
+    std::memcpy(
+        Request->DeviceName,
+        DeviceName,
+        sizeof(DeviceName) - sizeof(WCHAR));
+    IO_STATUS_BLOCK IoStatusBlock = {};
+    return ::NtFsControlFile(
+        Handle,
+        nullptr,
+        nullptr,
+        nullptr,
+        &IoStatusBlock,
+        FSCTL_LMR_START_INSTANCE,
+        RequestBuffer,
+        RequestBufferSize,
+        nullptr,
+        0);
+}
+
 int main()
 {
-    // I can't use that because of the limitation in VC-LTL.
-    // std::setlocale(LC_ALL, "zh_CN.UTF-8");
+    HANDLE LanmanRedirectorHandle = ::CreateFileW(
+        L"\\\\.\\GLOBALROOT\\Device\\LanmanRedirector",
+        FILE_LIST_DIRECTORY | FILE_TRAVERSE | SYNCHRONIZE,
+        FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+        nullptr,
+        OPEN_EXISTING,
+        0,
+        nullptr);
+    if (INVALID_HANDLE_VALUE != LanmanRedirectorHandle)
+    {
+        NTSTATUS Status = STATUS_SUCCESS;
 
-    std::setlocale(LC_ALL, "chs");
+        do
+        {
+            // 120: 26100.xxxx 28000
+            {
+                using RequestType = LMR_START_INSTANCE_REQUEST;
+                Status = ::LanmanRedirectorStartInstance<RequestType>(
+                    LanmanRedirectorHandle);
+                if (NT_SUCCESS(Status) ||
+                    STATUS_OBJECT_NAME_COLLISION == Status)
+                {
+                    break;
+                }
+                std::printf(
+                    "%s with %s failed: 0x%08X, trying to fallback...\n",
+                    "LanmanRedirectorStartInstance",
+                    "LMR_START_INSTANCE_REQUEST",
+                    Status);
+            }
 
-    std::wprintf(
-        L"VirtualSmb\n"
-        L"================================================================\n"
-        L"The F@cking MSVC 2019 toolset ruined our $1M project!\n");
+            // 116: 26100
+            {
+                using RequestType = LMR_START_INSTANCE_REQUEST_26100;
+                Status = ::LanmanRedirectorStartInstance<RequestType>(
+                    LanmanRedirectorHandle);
+                if (NT_SUCCESS(Status) ||
+                    STATUS_OBJECT_NAME_COLLISION == Status)
+                {
+                    break;
+                }
+                std::printf(
+                    "%s with %s failed: 0x%08X, trying to fallback...\n",
+                    "LanmanRedirectorStartInstance",
+                    "LMR_START_INSTANCE_REQUEST_26100",
+                    Status);
+            }
+
+            // 108: 25398
+            {
+                using RequestType = LMR_START_INSTANCE_REQUEST_25398;
+                Status = ::LanmanRedirectorStartInstance<RequestType>(
+                    LanmanRedirectorHandle);
+                if (NT_SUCCESS(Status) ||
+                    STATUS_OBJECT_NAME_COLLISION == Status)
+                {
+                    break;
+                }
+                std::printf(
+                    "%s with %s failed: 0x%08X, trying to fallback...\n",
+                    "LanmanRedirectorStartInstance",
+                    "LMR_START_INSTANCE_REQUEST_25398",
+                    Status);
+            }
+
+            // 92: 20348 22000 22621
+            {
+                using RequestType = LMR_START_INSTANCE_REQUEST_20348;
+                Status = ::LanmanRedirectorStartInstance<RequestType>(
+                    LanmanRedirectorHandle);
+                if (NT_SUCCESS(Status) ||
+                    STATUS_OBJECT_NAME_COLLISION == Status)
+                {
+                    break;
+                }
+                std::printf(
+                    "%s with %s failed: 0x%08X, trying to fallback...\n",
+                    "LanmanRedirectorStartInstance",
+                    "LMR_START_INSTANCE_REQUEST_20348",
+                    Status);
+            }
+
+            // 88: 17134 17763 18362 19041
+            {
+                using RequestType = LMR_START_INSTANCE_REQUEST_17134;
+                Status = ::LanmanRedirectorStartInstance<RequestType>(
+                    LanmanRedirectorHandle);
+                if (NT_SUCCESS(Status) ||
+                    STATUS_OBJECT_NAME_COLLISION == Status)
+                {
+                    break;
+                }
+                std::printf(
+                    "%s with %s failed: 0x%08X, trying to fallback...\n",
+                    "LanmanRedirectorStartInstance",
+                    "LMR_START_INSTANCE_REQUEST_17134",
+                    Status);
+            }
+
+            // 44: 10586 14393 15063 16299
+            {
+                using RequestType = LMR_START_INSTANCE_REQUEST_10586;
+                Status = ::LanmanRedirectorStartInstance<RequestType>(
+                    LanmanRedirectorHandle);
+                if (NT_SUCCESS(Status) ||
+                    STATUS_OBJECT_NAME_COLLISION == Status)
+                {
+                    break;
+                }
+                std::printf(
+                    "%s with %s failed: 0x%08X, trying to fallback...\n",
+                    "LanmanRedirectorStartInstance",
+                    "LMR_START_INSTANCE_REQUEST_10586",
+                    Status);
+            }
+
+            // 0: 10240 and earlier
+            {
+                Status = STATUS_NOT_SUPPORTED;
+            }
+
+        } while (false);
+
+        if (NT_SUCCESS(Status))
+        {
+            std::printf("SMB redirector instance started successfully.\n");
+        }
+        else if (STATUS_OBJECT_NAME_COLLISION == Status)
+        {
+            std::printf(
+                "SMB redirector instance already started.\n");
+        }
+        else
+        {
+            std::printf(
+                "LanmanRedirectorStartInstance failed with all known request "
+                "structures, cannot start SMB redirector instance.");
+        }
+
+        ::CloseHandle(LanmanRedirectorHandle);
+    }
+
+    std::getchar();
 
     return 0;
 }
