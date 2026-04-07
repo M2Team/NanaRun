@@ -19,6 +19,62 @@
 //            /blob/ed5784127999cfd4c08c254626cc964cb20d7948
 //            /internal/gcs-sidecar/vsmb.go
 
+typedef struct _SMB2_INSTANCE_CONFIGURATION_17134
+{
+    UINT32 DormantDirectoryTimeout;
+    UINT32 DormantFileTimeout;
+    UINT32 DormantFileLimit;
+    UINT32 FileInfoCacheLifetime;
+    UINT32 FileNotFoundCacheLifetime;
+    UINT32 DirectoryCacheLifetime;
+    UINT32 FileInfoCacheEntriesMax;
+    UINT32 FileNotFoundCacheEntriesMax;
+    UINT32 DirectoryCacheEntriesMax;
+    UINT32 DirectoryCacheSizeMax;
+    UINT8 RequireSecuritySignature;
+    UINT8 RequireEncryption;
+    UINT8 Padding[2];
+} SMB2_INSTANCE_CONFIGURATION_17134, *PSMB2_INSTANCE_CONFIGURATION_17134;
+
+typedef struct _SMB2_INSTANCE_CONFIGURATION_20348
+{
+    UINT32 DormantDirectoryTimeout;
+    UINT32 DormantFileTimeout;
+    UINT32 DormantFileLimit;
+    UINT32 FileInfoCacheLifetime;
+    UINT32 FileNotFoundCacheLifetime;
+    UINT32 DirectoryCacheLifetime;
+    UINT32 FileInfoCacheEntriesMax;
+    UINT32 FileNotFoundCacheEntriesMax;
+    UINT32 DirectoryCacheEntriesMax;
+    UINT32 DirectoryCacheSizeMax;
+    UINT32 ReadAheadGranularity;
+    UINT8 RequireSecuritySignature;
+    UINT8 RequireEncryption;
+    UINT8 Padding[2];
+} SMB2_INSTANCE_CONFIGURATION_20348, *PSMB2_INSTANCE_CONFIGURATION_20348;
+
+typedef struct _SMB2_INSTANCE_CONFIGURATION_25398
+{
+    UINT32 DormantDirectoryTimeout;
+    UINT32 DormantFileTimeout;
+    UINT32 DormantFileLimit;
+    UINT32 FileInfoCacheLifetime;
+    UINT32 FileNotFoundCacheLifetime;
+    UINT32 DirectoryCacheLifetime;
+    UINT32 FileInfoCacheEntriesMax;
+    UINT32 FileNotFoundCacheEntriesMax;
+    UINT32 DirectoryCacheEntriesMax;
+    UINT32 DirectoryCacheSizeMax;
+    UINT32 ReadAheadGranularity;
+    UINT32 VolumeFeatureSupportCacheLifetime;
+    UINT32 VolumeFeatureSupportCacheEntriesMax;
+    UINT8 RequireSecuritySignature;
+    UINT8 RequireEncryption;
+    UINT8 Padding[2];
+} SMB2_INSTANCE_CONFIGURATION_25398, *PSMB2_INSTANCE_CONFIGURATION_25398;
+
+// Since 26100.xxxx
 typedef struct _SMB2_INSTANCE_CONFIGURATION
 {
     UINT32 DormantDirectoryTimeout;
@@ -40,18 +96,101 @@ typedef struct _SMB2_INSTANCE_CONFIGURATION
     UINT8 Padding[2];
 } SMB2_INSTANCE_CONFIGURATION, *PSMB2_INSTANCE_CONFIGURATION;
 
+typedef struct _LMR_CONNECTION_PROPERTIES_10586
+{
+    union
+    {
+        UINT8 Value;
+        struct
+        {
+            UINT8 StatusCodeFiltering : 1; // Symbol
+            UINT8 FileInfoCache : 1; // Symbol
+            UINT8 FileNotFoundCache : 1; // Symbol
+            UINT8 DirectoryCache : 1; // Symbol
+            UINT8 Leasing : 1; // Symbol
+            UINT8 SuppressRenames : 1; // Symbol
+            UINT8 ForceMultiChannel : 1; // Symbol
+            UINT8 ForceKeepalive : 1; // Symbol
+        } Fields;
+    } Flags1;
+    union
+    {
+        UINT8 Value;
+        struct
+        {
+            UINT8 DisableBandwidthThrottling : 1; // Symbol
+            UINT8 Reserved : 7;
+        } Fields;
+    } Flags2;
+    UINT8 Padding[2];
+    UINT32 SessionTimeoutInterval;
+    UINT32 CAHandleKeepaliveInterval;
+    UINT32 NonCAHandleKeepaliveInterval;
+    UINT32 ActiveIOKeepaliveInterval;
+} LMR_CONNECTION_PROPERTIES_10586, *PLMR_CONNECTION_PROPERTIES_10586;
+
+typedef struct _LMR_CONNECTION_PROPERTIES_25398
+{
+    union
+    {
+        UINT8 Value;
+        struct
+        {
+            UINT8 StatusCodeFiltering : 1; // Symbol
+            UINT8 FileInfoCache : 1; // Symbol
+            UINT8 FileNotFoundCache : 1; // Symbol
+            UINT8 DirectoryCache : 1; // Symbol
+            UINT8 Leasing : 1; // Symbol
+            UINT8 SuppressRenames : 1; // Symbol
+            UINT8 ForceMultiChannel : 1; // Symbol
+            UINT8 ForceKeepalive : 1; // Symbol
+        } Fields;
+    } Flags1;
+    union
+    {
+        UINT8 Value;
+        struct
+        {
+            UINT8 DisableBandwidthThrottling : 1; // Symbol
+            UINT8 Reserved : 7;
+        } Fields;
+    } Flags2;
+    UINT8 Padding[2];
+    UINT32 SessionTimeoutInterval;
+    UINT32 CAHandleKeepaliveInterval;
+    UINT32 NonCAHandleKeepaliveInterval;
+    UINT32 ActiveIOKeepaliveInterval;
+    UINT32 DisableRdma;
+    UINT32 ConnectionCountPerRdmaInterface;
+} LMR_CONNECTION_PROPERTIES_25398, *PLMR_CONNECTION_PROPERTIES_25398;
+
+// Since 26100.1
 typedef struct _LMR_CONNECTION_PROPERTIES
 {
-    UINT8 StatusCodeFiltering : 1;
-    UINT8 FileInfoCache : 1;
-    UINT8 FileNotFoundCache : 1;
-    UINT8 DirectoryCache : 1;
-    UINT8 Leasing : 1;
-    UINT8 SuppressRenames : 1;
-    UINT8 ForceMultiChannel : 1;
-    UINT8 ForceKeepalive : 1;
-    UINT8 DisableBandwidthThrottling : 1;
-    UINT8 Reserved : 7;
+    union
+    {
+        UINT8 Value;
+        struct
+        {
+            UINT8 StatusCodeFiltering : 1; // Symbol
+            UINT8 FileInfoCache : 1; // Symbol
+            UINT8 FileNotFoundCache : 1; // Symbol
+            UINT8 DirectoryCache : 1; // Symbol
+            UINT8 Leasing : 1; // Symbol
+            UINT8 SuppressRenames : 1; // Symbol
+            UINT8 ForceMultiChannel : 1; // Symbol
+            UINT8 ForceKeepalive : 1; // Symbol
+        } Fields;
+    } Flags1;
+    union
+    {
+        UINT8 Value;
+        struct
+        {
+            UINT8 DisableBandwidthThrottling : 1; // Symbol
+            UINT8 Reserved : 7;
+        } Fields;
+    } Flags2;
     UINT8 Padding[2];
     UINT32 SessionTimeoutInterval;
     UINT32 CAHandleKeepaliveInterval;
@@ -70,20 +209,99 @@ typedef struct _LMR_CONNECTION_PROPERTIES
 #define LMR_INSTANCE_FLAG_ALLOW_GUEST_AUTH 0x8
 #define LMR_INSTANCE_FLAG_SUPPORTS_DIRECTMAPPED_IO 0x10
 
+typedef struct _LMR_START_INSTANCE_REQUEST_10586
+{
+    UINT32 StructureSize;
+    UINT32 IoTimeout;
+    UINT32 IoRetryCount;
+    UINT16 Flags; // LMR_INSTANCE_FLAG_*
+    UINT16 AlternatePort; // Symbol
+    UINT32 Reserved1;
+    LMR_CONNECTION_PROPERTIES_10586 DefaultConnectionProperties;
+    UINT8 InstanceId;
+    UINT8 Reserved2;
+    UINT16 DeviceNameLength;
+    WCHAR DeviceName[ANYSIZE_ARRAY]; // Symbol
+} LMR_START_INSTANCE_REQUEST_10586, *PLMR_START_INSTANCE_REQUEST_10586;
+
+typedef struct _LMR_START_INSTANCE_REQUEST_17134
+{
+    UINT32 StructureSize;
+    UINT32 IoTimeout;
+    UINT32 IoRetryCount;
+    UINT16 Flags; // LMR_INSTANCE_FLAG_*
+    UINT16 AlternatePort; // Symbol
+    UINT32 Reserved1;
+    SMB2_INSTANCE_CONFIGURATION_17134 InstanceConfig;
+    LMR_CONNECTION_PROPERTIES_10586 DefaultConnectionProperties;
+    UINT8 InstanceId;
+    UINT8 Reserved2;
+    UINT16 DeviceNameLength;
+    WCHAR DeviceName[ANYSIZE_ARRAY]; // Symbol
+} LMR_START_INSTANCE_REQUEST_17134, *PLMR_START_INSTANCE_REQUEST_17134;
+
+typedef struct _LMR_START_INSTANCE_REQUEST_20348
+{
+    UINT32 StructureSize;
+    UINT32 IoTimeout;
+    UINT32 IoRetryCount;
+    UINT16 Flags; // LMR_INSTANCE_FLAG_*
+    UINT16 AlternatePort; // Symbol
+    UINT32 Reserved1;
+    SMB2_INSTANCE_CONFIGURATION_20348 InstanceConfig;
+    LMR_CONNECTION_PROPERTIES_10586 DefaultConnectionProperties;
+    UINT8 InstanceId;
+    UINT8 Reserved2;
+    UINT16 DeviceNameLength;
+    WCHAR DeviceName[ANYSIZE_ARRAY]; // Symbol
+} LMR_START_INSTANCE_REQUEST_20348, *PLMR_START_INSTANCE_REQUEST_20348;
+
+typedef struct _LMR_START_INSTANCE_REQUEST_25398
+{
+    UINT32 StructureSize;
+    UINT32 IoTimeout;
+    UINT32 IoRetryCount;
+    UINT16 Flags; // LMR_INSTANCE_FLAG_*
+    UINT16 AlternatePort; // Symbol
+    UINT32 Reserved1;
+    SMB2_INSTANCE_CONFIGURATION_25398 InstanceConfig;
+    LMR_CONNECTION_PROPERTIES_25398 DefaultConnectionProperties;
+    UINT8 InstanceId;
+    UINT8 Reserved2;
+    UINT16 DeviceNameLength;
+    WCHAR DeviceName[ANYSIZE_ARRAY]; // Symbol
+} LMR_START_INSTANCE_REQUEST_25398, *PLMR_START_INSTANCE_REQUEST_25398;
+
+typedef struct _LMR_START_INSTANCE_REQUEST_26100
+{
+    UINT32 StructureSize;
+    UINT32 IoTimeout;
+    UINT32 IoRetryCount;
+    UINT16 Flags; // LMR_INSTANCE_FLAG_*
+    UINT16 AlternatePort; // Symbol
+    UINT32 Reserved1;
+    SMB2_INSTANCE_CONFIGURATION_25398 InstanceConfig;
+    LMR_CONNECTION_PROPERTIES DefaultConnectionProperties;
+    UINT8 InstanceId;
+    UINT8 Reserved2;
+    UINT16 DeviceNameLength;
+    WCHAR DeviceName[ANYSIZE_ARRAY]; // Symbol
+} LMR_START_INSTANCE_REQUEST_26100, *PLMR_START_INSTANCE_REQUEST_26100;
+
 typedef struct _LMR_START_INSTANCE_REQUEST
 {
     UINT32 StructureSize;
     UINT32 IoTimeout;
     UINT32 IoRetryCount;
     UINT16 Flags; // LMR_INSTANCE_FLAG_*
-    UINT16 AlternatePort;
+    UINT16 AlternatePort; // Symbol
     UINT32 Reserved1;
     SMB2_INSTANCE_CONFIGURATION InstanceConfig;
     LMR_CONNECTION_PROPERTIES DefaultConnectionProperties;
     UINT8 InstanceId;
     UINT8 Reserved2;
     UINT16 DeviceNameLength;
-    WCHAR DeviceName[ANYSIZE_ARRAY];
+    WCHAR DeviceName[ANYSIZE_ARRAY]; // Symbol
 } LMR_START_INSTANCE_REQUEST, *PLMR_START_INSTANCE_REQUEST;
 
 #ifndef FSCTL_LMR_START_INSTANCE
