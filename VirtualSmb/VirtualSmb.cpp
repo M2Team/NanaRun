@@ -385,18 +385,32 @@ NTSTATUS LanmanRedirectorStartInstance(
 
 int main()
 {
-    HANDLE LanmanRedirectorHandle = ::CreateFileW(
-        L"\\\\.\\GLOBALROOT\\Device\\LanmanRedirector",
-        FILE_LIST_DIRECTORY | FILE_TRAVERSE | SYNCHRONIZE,
-        FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
-        nullptr,
-        OPEN_EXISTING,
-        0,
-        nullptr);
-    if (INVALID_HANDLE_VALUE != LanmanRedirectorHandle)
-    {
-        NTSTATUS Status = STATUS_SUCCESS;
+    NTSTATUS Status = STATUS_SUCCESS;
 
+    HANDLE LanmanRedirectorHandle = INVALID_HANDLE_VALUE;
+    {
+        UNICODE_STRING LanmanRedirectorDevicePath = RTL_CONSTANT_STRING(
+            L"\\Device\\LanmanRedirector");
+        OBJECT_ATTRIBUTES ObjectAttributes = {};
+        ObjectAttributes.Length = sizeof(OBJECT_ATTRIBUTES);
+        ObjectAttributes.ObjectName = &LanmanRedirectorDevicePath;
+        ObjectAttributes.Attributes = OBJ_CASE_INSENSITIVE;
+        IO_STATUS_BLOCK IoStatusBlock = {};
+        Status = ::NtCreateFile(
+            &LanmanRedirectorHandle,
+            FILE_LIST_DIRECTORY | FILE_TRAVERSE | SYNCHRONIZE,
+            &ObjectAttributes,
+            &IoStatusBlock,
+            0,
+            0,
+            FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+            FILE_OPEN,
+            0,
+            nullptr,
+            0);
+    }
+    if (NT_SUCCESS(Status))
+    {
         do
         {
             // 120: 26100.xxxx 28000
@@ -525,6 +539,100 @@ int main()
         }
 
         ::CloseHandle(LanmanRedirectorHandle);
+    }
+
+    HANDLE VmSmbHandle = INVALID_HANDLE_VALUE;
+    {
+        UNICODE_STRING VmSmbDevicePath = RTL_CONSTANT_STRING(
+            L"\\Device\\vmsmb");
+        OBJECT_ATTRIBUTES ObjectAttributes = {};
+        ObjectAttributes.Length = sizeof(OBJECT_ATTRIBUTES);
+        ObjectAttributes.ObjectName = &VmSmbDevicePath;
+        ObjectAttributes.Attributes = OBJ_CASE_INSENSITIVE;
+        IO_STATUS_BLOCK IoStatusBlock = {};
+        Status = ::NtCreateFile(
+            &VmSmbHandle,
+            FILE_LIST_DIRECTORY | FILE_TRAVERSE | SYNCHRONIZE,
+            &ObjectAttributes,
+            &IoStatusBlock,
+            0,
+            0,
+            FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+            FILE_OPEN,
+            0,
+            nullptr,
+            0);
+    }
+    if (NT_SUCCESS(Status))
+    {
+        const WCHAR DeviceName[] =
+            L"\\Device\\VMBus\\{4d12e519-17a0-4ae4-8eaa-5270fc6abdb7}-{dcc079ae-60ba-4d07-847c-3493609c0870}-0000";
+        const std::size_t DeviceNameLength =
+            (sizeof(DeviceName) / sizeof(WCHAR)) - 1;
+
+        const std::size_t RequestBufferSize =
+            FIELD_OFFSET(LMR_BIND_UNBIND_TRANSPORT_REQUEST, TransportId) +
+            sizeof(WCHAR) * DeviceNameLength;
+        UINT8 RequestBuffer[RequestBufferSize] = {};
+
+        PLMR_BIND_UNBIND_TRANSPORT_REQUEST Request =
+            reinterpret_cast<PLMR_BIND_UNBIND_TRANSPORT_REQUEST>(RequestBuffer);
+        Request->StructureSize = sizeof(LMR_BIND_UNBIND_TRANSPORT_REQUEST);
+        Request->Flags = 0;
+        Request->Type = SmbCeTransportTypeVmbus;
+        Request->TransportIdLength = DeviceNameLength * sizeof(WCHAR);
+        std::memcpy(
+            Request->TransportId,
+            DeviceName,
+            sizeof(DeviceName) - sizeof(WCHAR));
+        IO_STATUS_BLOCK IoStatusBlock = {};
+        Status = ::NtFsControlFile(
+            VmSmbHandle,
+            nullptr,
+            nullptr,
+            nullptr,
+            &IoStatusBlock,
+            FSCTL_LMR_BIND_TO_TRANSPORT,
+            RequestBuffer,
+            RequestBufferSize,
+            nullptr,
+            0);
+        if (NT_SUCCESS(Status))
+        {
+            std::printf("VMBUS transport bound to SMB redirector instance.\n");
+        }
+        else
+        {
+            std::printf(
+                "Failed to bind VMBUS transport to SMB redirector instance: "
+                "0x%08X\n",
+                Status);
+        }
+    }
+
+    {
+        HANDLE Handle = INVALID_HANDLE_VALUE;
+        {
+            UNICODE_STRING VmSmbDevicePath = RTL_CONSTANT_STRING(
+                L"\\Device\\vmsmb\\VSMB-{dcc079ae-60ba-4d07-847c-3493609c0870}\\NanaBox.HostDrivers");
+            OBJECT_ATTRIBUTES ObjectAttributes = {};
+            ObjectAttributes.Length = sizeof(OBJECT_ATTRIBUTES);
+            ObjectAttributes.ObjectName = &VmSmbDevicePath;
+            ObjectAttributes.Attributes = OBJ_CASE_INSENSITIVE;
+            IO_STATUS_BLOCK IoStatusBlock = {};
+            Status = ::NtCreateFile(
+                &Handle,
+                FILE_LIST_DIRECTORY | FILE_TRAVERSE | SYNCHRONIZE,
+                &ObjectAttributes,
+                &IoStatusBlock,
+                0,
+                0,
+                FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+                FILE_OPEN,
+                0,
+                nullptr,
+                0);
+        }
     }
 
     std::getchar();
