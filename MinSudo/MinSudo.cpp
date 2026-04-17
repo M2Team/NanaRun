@@ -31,6 +31,114 @@
 
 namespace
 {
+    std::vector<std::pair<std::wstring, size_t>> SplitCommandLineWithPositions(
+        std::wstring const& CommandLine)
+    {
+        std::vector<std::pair<std::wstring, size_t>> Result;
+
+        wchar_t c = L'\0';
+        int copy_character;
+        unsigned numslash;
+
+        std::wstring Buffer;
+        Buffer.reserve(CommandLine.size());
+
+        wchar_t* p = const_cast<wchar_t*>(CommandLine.c_str());
+        wchar_t* Start = p;
+
+        bool InQuotes = false;
+        do
+        {
+            if (*p == '"')
+            {
+                InQuotes = !InQuotes;
+                c = *p++;
+                continue;
+            }
+
+            Buffer.push_back(*p);
+            c = *p++;
+        } while (c != L'\0' && (InQuotes || (c != L' ' && c != L'\t')));
+
+        if (c == L'\0')
+        {
+            p--;
+        }
+        else
+        {
+            Buffer.resize(Buffer.size() - 1);
+        }
+
+        Result.emplace_back(Buffer, static_cast<size_t>(Start - CommandLine.c_str()));
+
+        InQuotes = false;
+
+        for (;;)
+        {
+            if (*p)
+            {
+                while (*p == L' ' || *p == L'\t')
+                    ++p;
+            }
+
+            if (*p == L'\0')
+                break;
+
+            Start = p;
+            Buffer.clear();
+
+            for (;;)
+            {
+                copy_character = 1;
+
+                numslash = 0;
+
+                while (*p == L'\\')
+                {
+                    ++p;
+                    ++numslash;
+                }
+
+                if (*p == L'"')
+                {
+                    if (numslash % 2 == 0)
+                    {
+                        if (InQuotes && p[1] == L'"')
+                        {
+                            p++;
+                        }
+                        else
+                        {
+                            copy_character = 0;
+                            InQuotes = !InQuotes;
+                        }
+                    }
+
+                    numslash /= 2;
+                }
+
+                while (numslash--)
+                {
+                    Buffer.push_back(L'\\');
+                }
+
+                if (*p == L'\0' || (!InQuotes && (*p == L' ' || *p == L'\t')))
+                    break;
+
+                if (copy_character)
+                {
+                    Buffer.push_back(*p);
+                }
+
+                ++p;
+            }
+
+            Result.emplace_back(Buffer, static_cast<size_t>(Start - CommandLine.c_str()));
+        }
+
+        return Result;
+    }
+
     void SplitCommandLineEx(
         std::wstring const& CommandLine,
         std::vector<std::wstring> const& OptionPrefixes,
@@ -43,95 +151,63 @@ namespace
         OptionsAndParameters.clear();
         UnresolvedCommandLine.clear();
 
-        size_t arg_size = 0;
-        for (auto& SplitArgument : Mile::SplitCommandLineWideString(CommandLine))
+        auto ArgsWithPositions = SplitCommandLineWithPositions(CommandLine);
+
+        for (size_t i = 0; i < ArgsWithPositions.size(); ++i)
         {
-            // We need to process the application name at the beginning.
+            auto& Item = ArgsWithPositions[i];
+            std::wstring& SplitArgument = Item.first;
+            size_t ArgStartPos = Item.second;
+
             if (ApplicationName.empty())
             {
-                // For getting the unresolved command line, we need to cumulate
-                // length which including spaces.
-                arg_size += SplitArgument.size() + 1;
-
-                // Save
                 ApplicationName = SplitArgument;
+                continue;
             }
-            else
+
+            bool IsOption = false;
+            size_t OptionPrefixLength = 0;
+
+            for (auto& OptionPrefix : OptionPrefixes)
             {
-                bool IsOption = false;
-                size_t OptionPrefixLength = 0;
-
-                for (auto& OptionPrefix : OptionPrefixes)
+                if (0 == _wcsnicmp(
+                    SplitArgument.c_str(),
+                    OptionPrefix.c_str(),
+                    OptionPrefix.size()))
                 {
-                    if (0 == _wcsnicmp(
-                        SplitArgument.c_str(),
-                        OptionPrefix.c_str(),
-                        OptionPrefix.size()))
-                    {
-                        IsOption = true;
-                        OptionPrefixLength = OptionPrefix.size();
-                    }
+                    IsOption = true;
+                    OptionPrefixLength = OptionPrefix.size();
                 }
+            }
 
-                if (IsOption)
+            if (IsOption)
+            {
+                wchar_t* OptionStart = &SplitArgument[0] + OptionPrefixLength;
+                wchar_t* ParameterStart = nullptr;
+
+                for (auto& OptionParameterSeparator : OptionParameterSeparators)
                 {
-                    // For getting the unresolved command line, we need to cumulate
-                    // length which including spaces.
-                    arg_size += SplitArgument.size() + 1;
-
-                    // Get the option name and parameter.
-
-                    wchar_t* OptionStart = &SplitArgument[0] + OptionPrefixLength;
-                    wchar_t* ParameterStart = nullptr;
-
-                    for (auto& OptionParameterSeparator
-                        : OptionParameterSeparators)
+                    wchar_t* Result = wcsstr(
+                        OptionStart,
+                        OptionParameterSeparator.c_str());
+                    if (nullptr == Result)
                     {
-                        wchar_t* Result = wcsstr(
-                            OptionStart,
-                            OptionParameterSeparator.c_str());
-                        if (nullptr == Result)
-                        {
-                            continue;
-                        }
-
-                        Result[0] = L'\0';
-                        ParameterStart = Result + OptionParameterSeparator.size();
-
-                        break;
+                        continue;
                     }
 
-                    // Save
-                    OptionsAndParameters[(OptionStart ? OptionStart : L"")] =
-                        (ParameterStart ? ParameterStart : L"");
-                }
-                else
-                {
-                    // Get the approximate location of the unresolved command line.
-                    // We use "(arg_size - 1)" to ensure that the program path
-                    // without quotes can also correctly parse.
-                    wchar_t* search_start =
-                        const_cast<wchar_t*>(CommandLine.c_str()) + (arg_size - 1);
-
-                    // Get the unresolved command line. Search for the beginning of
-                    // the first parameter delimiter called space and exclude the
-                    // first space by adding 1 to the result.
-                    wchar_t* command = wcsstr(search_start, L" ") + 1;
-
-                    // Omit the space. (Thanks to wzzw.)
-                    while (command && *command == L' ')
-                    {
-                        ++command;
-                    }
-
-                    // Save
-                    if (command)
-                    {
-                        UnresolvedCommandLine = command;
-                    }
+                    Result[0] = L'\0';
+                    ParameterStart = Result + OptionParameterSeparator.size();
 
                     break;
                 }
+
+                OptionsAndParameters[(OptionStart ? OptionStart : L"")] =
+                    (ParameterStart ? ParameterStart : L"");
+            }
+            else
+            {
+                UnresolvedCommandLine = CommandLine.substr(ArgStartPos);
+                break;
             }
         }
     }
