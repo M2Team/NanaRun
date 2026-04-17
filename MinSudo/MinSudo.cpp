@@ -1040,10 +1040,6 @@ int main()
     {
         WorkDir = std::wstring(::GetWorkingDirectory());
     }
-    if (L'\\' == WorkDir.back())
-    {
-        WorkDir.pop_back();
-    }
 
     if (::MileIsCurrentProcessElevated())
     {
@@ -1094,6 +1090,10 @@ int main()
         }
         TargetCommandLine += L"--WorkDir=\"";
         TargetCommandLine += WorkDir;
+        if (!WorkDir.empty() && L'\\' == WorkDir.back())
+        {
+            TargetCommandLine += L'\\';
+        }
         TargetCommandLine += L"\" ";
         if (TargetLevel == TargetProcessTokenLevel::System)
         {
