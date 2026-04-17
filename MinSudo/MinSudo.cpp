@@ -241,6 +241,7 @@ namespace
 
     DWORD GetActiveSessionID()
     {
+        DWORD Result = 0;
         DWORD Count = 0;
         PWTS_SESSION_INFOW pSessionInfo = nullptr;
         if (::WTSEnumerateSessionsW(
@@ -254,7 +255,8 @@ namespace
             {
                 if (pSessionInfo[i].State == WTS_CONNECTSTATE_CLASS::WTSActive)
                 {
-                    return pSessionInfo[i].SessionId;
+                    Result = pSessionInfo[i].SessionId;
+                    break;
                 }
             }
 
@@ -262,7 +264,7 @@ namespace
         }
 
         // We should return session 0 for the case that no active session.
-        return 0;
+        return Result;
     }
 
     BOOL CreateSystemToken(
