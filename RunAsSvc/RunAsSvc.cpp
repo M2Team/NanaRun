@@ -23,16 +23,26 @@
 // RunAsSvc Instance [ServiceName]
 
 // HKEY_LOCAL_MACHINE\System\CurrentControlSet\Services\[ServiceName]
-// HKEY_LOCAL_MACHINE\System\CurrentControlSet\Services[ServiceName]\RunAsSvc
-// - REG_SZ: ApplicationName
-// - REG_SZ: CommandLine
-// - REG_SZ: CurrentDirectory
-// - REG_MULTI_SZ: EnvironmentVariables
+// HKEY_LOCAL_MACHINE\System\CurrentControlSet\Services\[ServiceName]\RunAsSvc
+
+// - REG_SZ: Application (Mandatory)
+// - REG_SZ: Parameters
+// - REG_SZ: Directory
+// - REG_SZ: Environment
+
+// - REG_DWORD: EnableLogging
+// - REG_SZ: LoggingRootDirectory
+//   (Default: %ALLUSERSPROFILE%\RunAsSvc\Logs\[ServiceName])
+//
+// [LoggingRootDirectory]\[DateTimeWithMilliseconds a.k.a. yyyyMMdd.HHmmss.fff]\
+// 
+// - REG_DWORD: EnableStandardOutputLogging for StandardOutput.log
+// - REG_DWORD: EnableStandardErrorLogging for StandardError.log
+// - REG_DWORD: EnableServiceInstanceLogging for RunAsSvc.log
+
 // - REG_DWORD: TerminateChildProcessesOnServiceStop
 // - REG_DWORD: RestartOnApplicationExit
 // - REG_DWORD: GracefulTerminationTimeout
-// - REG_SZ: StandardOutputRedirectFilePath
-// - REG_SZ: StandardErrorRedirectFilePath
 
 namespace
 {
