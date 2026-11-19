@@ -28,17 +28,16 @@
 // - REG_SZ: Application (Mandatory)
 // - REG_SZ: Parameters
 // - REG_SZ: Directory
-// - REG_SZ: Environment
+// - REG_MULTI_SZ: Environment
 
 // - REG_DWORD: EnableLogging
 // - REG_SZ: LoggingRootDirectory
 //   (Default: %ALLUSERSPROFILE%\RunAsSvc\Logs\[ServiceName])
 //
 // [LoggingRootDirectory]\[DateTimeWithMilliseconds a.k.a. yyyyMMdd.HHmmss.fff]\
-// 
-// - REG_DWORD: EnableStandardOutputLogging for StandardOutput.log
-// - REG_DWORD: EnableStandardErrorLogging for StandardError.log
-// - REG_DWORD: EnableServiceInstanceLogging for RunAsSvc.log
+// - StandardOutput.log
+// - StandardError.log
+// - RunAsSvc.log
 
 // - REG_DWORD: TerminateChildProcessesOnServiceStop
 // - REG_DWORD: RestartOnApplicationExit
